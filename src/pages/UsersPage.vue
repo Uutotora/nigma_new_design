@@ -543,7 +543,7 @@ const ACTIVEG_POINTS: PointsMatrix = {
 };
 
 const MILLION_POINTS: PointsMatrix = {
-  earned: { city: 1720, prize: 3000, mosbilet: 0 },
+  earned: { city: 1720, prize: 3000, mosbilet: 200 },
   spent: { city: 500, prize: 3000, mosbilet: 0 },
   balance: { city: 0, prize: 0, mosbilet: 0 },
 };
