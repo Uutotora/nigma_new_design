@@ -13,7 +13,9 @@
           :key="dashboard.id"
           class="col-12 col-sm-6 col-md-3"
         >
-          <a :href="dashboard.href" class="menu-element">{{ dashboard.title }}</a>
+          <button type="button" class="menu-element" @click.prevent>
+            {{ dashboard.title }}
+          </button>
         </div>
       </div>
     </div>
@@ -55,6 +57,7 @@ const dashboards: DashboardItem[] = [
   width: 100%;
   background: #fff;
   border-radius: 16px;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -66,8 +69,10 @@ const dashboards: DashboardItem[] = [
     0 3px 7px -3px rgba(0, 0, 0, 0.3);
   text-decoration: none;
   color: #00008b;
-  font-size: 28px;
+  font-size: 38px;
   text-align: center;
+  cursor: pointer;
+  font: inherit;
 
   &:hover {
     box-shadow:

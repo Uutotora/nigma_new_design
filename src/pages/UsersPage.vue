@@ -157,15 +157,24 @@
 
                 <!-- Правый: баллы + группы -->
                 <div class="s-right">
-                  <div class="summary-card">
+                  <div v-if="activePlatform !== 'pdp'" class="summary-card">
                     <p class="section-title">Баллы</p>
                     <div class="points-block">
                       <div
                         class="points-matrix__grid"
                         :style="{
-                          gridTemplateColumns: `120px repeat(${pointColumns.length}, minmax(0, 1fr))`,
+                          gridTemplateColumns: `72px repeat(${pointColumns.length}, minmax(66px, 1fr))`,
                         }"
                       >
+                        <div class="points-matrix__corner" />
+                        <div
+                          v-for="col in pointColumns"
+                          :key="`head-${col.key}`"
+                          class="points-matrix__col"
+                          :class="col.headerClass"
+                        >
+                          {{ col.label }}
+                        </div>
                         <template v-for="row in pointRows" :key="row.key">
                           <div class="points-matrix__row-label">{{ row.label }}</div>
                           <div
@@ -177,7 +186,6 @@
                               <span class="points-chip__value">
                                 {{ formatPoints(currentPointsMatrix[row.key][col.key]) }}
                               </span>
-                              <q-tooltip>{{ col.tooltip }}</q-tooltip>
                             </div>
                           </div>
                         </template>
@@ -366,7 +374,7 @@ const iconOur = new URL('../css/our.e8350a8e.svg', import.meta.url).href;
 const iconHome = new URL('../css/home.55681fec.svg', import.meta.url).href;
 const iconTask = new URL('../css/task.35b75734.svg', import.meta.url).href;
 const iconPrize = new URL('../css/prize.fa0e6560.svg', import.meta.url).href;
-const iconCityIdeas = new URL('../css/городидей.svg', import.meta.url).href;
+const iconCityIdeas = new URL('../css/cityideas.svg', import.meta.url).href;
 
 const activeSection  = ref('profile');
 const activePlatform = ref('summary');
@@ -563,7 +571,7 @@ const pointRows = computed(() => {
       return rows;
     }
     if (activePlatform.value === 'million') {
-      return rows.filter((row) => row.key !== 'balance');
+      return rows.filter((row) => row.key === 'earned');
     }
     return rows.filter((row) => row.key === 'earned');
   }
@@ -575,20 +583,28 @@ const pointColumns = computed(() => {
     key: PointsColKey;
     class: string;
     tooltip: string;
+    label: string;
+    headerClass: string;
   }[] = [
     {
       key: 'city',
+      label: 'Городские',
       class: 'points-chip--city',
+      headerClass: 'points-matrix__col--city',
       tooltip: 'Городские баллы',
     },
     {
       key: 'prize',
+      label: 'Призовые',
       class: 'points-chip--prize',
+      headerClass: 'points-matrix__col--prize',
       tooltip: 'Призовые баллы',
     },
     {
       key: 'mosbilet',
+      label: 'Мосбилет',
       class: 'points-chip--mosbilet',
+      headerClass: 'points-matrix__col--mosbilet',
       tooltip: 'Мосбилет',
     },
   ];
@@ -1105,12 +1121,27 @@ const tags = [
 
 .points-matrix__grid {
   display: grid;
-  gap: 6px 18px;
+  gap: 4px 6px;
   align-items: center;
   padding: 8px 10px;
   background: #ffffff;
   border-radius: 10px;
   border: 1px solid #f0f2f6;
+}
+
+.points-matrix__corner {
+  height: 18px;
+}
+
+.points-matrix__col {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  text-align: center;
+  color: #475569;
+  white-space: nowrap;
+  line-height: 1.2;
 }
 
 .points-matrix__row-label {
