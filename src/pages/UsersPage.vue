@@ -158,6 +158,7 @@
                 <!-- Правый: баллы + группы -->
                 <div class="s-right">
                   <div v-if="activePlatform !== 'pdp'" class="summary-card">
+                    <p class="section-title">Баллы</p>
                     <div class="points-block">
                       <div
                         class="points-matrix__grid"
@@ -1135,7 +1136,7 @@ const tags = [
   padding: 8px 10px;
   background: #ffffff;
   border-radius: 10px;
-  border: none;
+  border: 1px solid #f0f2f6;
 }
 
 .points-matrix__corner {
