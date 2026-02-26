@@ -12,7 +12,7 @@
               v-model="searchQuery"
               dense
               filled
-              placeholder="Поиск по SSO ID"
+              placeholder="Поиск по SSO ID или по номеру телефона"
               class="search-input"
               @keyup.enter="applySearch"
             >
@@ -579,6 +579,48 @@
                   <div class="filter-sub">
                     <div class="filter-sub__label">До</div>
                     <q-input v-model="filters.kidsPointsBalance.to" dense filled label="До" inputmode="numeric" />
+                  </div>
+                </div>
+              </div>
+            </q-expansion-item>
+
+            <q-expansion-item label="Мосбилет баллы" class="filters-section" :duration="200">
+              <div class="filter-block">
+                <div class="filter-label">Заработано</div>
+                <div class="filter-range">
+                  <div class="filter-sub">
+                    <div class="filter-sub__label">От</div>
+                    <q-input v-model="filters.mosbiletPointsEarned.from" dense filled label="От" inputmode="numeric" />
+                  </div>
+                  <div class="filter-sub">
+                    <div class="filter-sub__label">До</div>
+                    <q-input v-model="filters.mosbiletPointsEarned.to" dense filled label="До" inputmode="numeric" />
+                  </div>
+                </div>
+              </div>
+              <div class="filter-block">
+                <div class="filter-label">Потрачено</div>
+                <div class="filter-range">
+                  <div class="filter-sub">
+                    <div class="filter-sub__label">От</div>
+                    <q-input v-model="filters.mosbiletPointsSpent.from" dense filled label="От" inputmode="numeric" />
+                  </div>
+                  <div class="filter-sub">
+                    <div class="filter-sub__label">До</div>
+                    <q-input v-model="filters.mosbiletPointsSpent.to" dense filled label="До" inputmode="numeric" />
+                  </div>
+                </div>
+              </div>
+              <div class="filter-block">
+                <div class="filter-label">Остаток</div>
+                <div class="filter-range">
+                  <div class="filter-sub">
+                    <div class="filter-sub__label">От</div>
+                    <q-input v-model="filters.mosbiletPointsBalance.from" dense filled label="От" inputmode="numeric" />
+                  </div>
+                  <div class="filter-sub">
+                    <div class="filter-sub__label">До</div>
+                    <q-input v-model="filters.mosbiletPointsBalance.to" dense filled label="До" inputmode="numeric" />
                   </div>
                 </div>
               </div>

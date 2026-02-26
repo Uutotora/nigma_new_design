@@ -158,12 +158,11 @@
                 <!-- Правый: баллы + группы -->
                 <div class="s-right">
                   <div v-if="activePlatform !== 'pdp'" class="summary-card">
-                    <p class="section-title">Баллы</p>
                     <div class="points-block">
                       <div
                         class="points-matrix__grid"
                         :style="{
-                          gridTemplateColumns: `72px repeat(${pointColumns.length}, minmax(66px, 1fr))`,
+                          gridTemplateColumns: pointsGridTemplateColumns,
                         }"
                       >
                         <div class="points-matrix__corner" />
@@ -175,6 +174,7 @@
                         >
                           {{ col.label }}
                         </div>
+                        <div v-if="hasSinglePointColumn" class="points-matrix__spacer" aria-hidden="true" />
                         <template v-for="row in pointRows" :key="row.key">
                           <div class="points-matrix__row-label">{{ row.label }}</div>
                           <div
@@ -188,6 +188,7 @@
                               </span>
                             </div>
                           </div>
+                          <div v-if="hasSinglePointColumn" class="points-matrix__spacer" aria-hidden="true" />
                         </template>
                       </div>
                     </div>
@@ -611,13 +612,21 @@ const pointColumns = computed(() => {
 
   if (activePlatform.value === 'summary') return columns;
   if (activePlatform.value === 'million') {
-    return columns.filter((col) => col.key !== 'mosbilet');
+    return columns;
   }
   if (activePlatform.value === 'pdp') {
     return columns;
   }
   return columns.filter((col) => col.key === 'city');
 });
+
+const pointsGridTemplateColumns = computed(() =>
+  pointColumns.value.length === 1
+    ? '72px repeat(2, minmax(66px, 1fr))'
+    : `72px repeat(${pointColumns.value.length}, minmax(66px, 1fr))`,
+);
+
+const hasSinglePointColumn = computed(() => pointColumns.value.length === 1);
 
 const formatPoints = (value: number) => value.toLocaleString('ru-RU');
 
@@ -1126,7 +1135,7 @@ const tags = [
   padding: 8px 10px;
   background: #ffffff;
   border-radius: 10px;
-  border: 1px solid #f0f2f6;
+  border: none;
 }
 
 .points-matrix__corner {

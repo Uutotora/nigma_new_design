@@ -30,6 +30,9 @@ export interface FiltersState {
   kidsPointsEarned: RangeFilter;
   kidsPointsSpent: RangeFilter;
   kidsPointsBalance: RangeFilter;
+  mosbiletPointsEarned: RangeFilter;
+  mosbiletPointsSpent: RangeFilter;
+  mosbiletPointsBalance: RangeFilter;
   tags: string[];
   activityGroup: string[];
   loyaltyGroup: string[];
@@ -60,6 +63,9 @@ export const getDefaultFilters = (): FiltersState => ({
   kidsPointsEarned: { from: '', to: '' },
   kidsPointsSpent: { from: '', to: '' },
   kidsPointsBalance: { from: '', to: '' },
+  mosbiletPointsEarned: { from: '', to: '' },
+  mosbiletPointsSpent: { from: '', to: '' },
+  mosbiletPointsBalance: { from: '', to: '' },
   tags: [],
   activityGroup: [],
   loyaltyGroup: [],
@@ -110,6 +116,9 @@ export interface UserData {
   kidsPointsEarned: number;
   kidsPointsSpent: number;
   kidsPointsBalance: number;
+  mosbiletPointsEarned: number;
+  mosbiletPointsSpent: number;
+  mosbiletPointsBalance: number;
   gender: string;
   birthDate: Date;
   maritalStatus: string;
@@ -162,6 +171,8 @@ const generateUserData = (): UserData[] => {
     const prizeSpent = Math.floor(Math.random() * Math.min(prizeEarned, 800));
     const kidsEarned = Math.floor(Math.random() * 2000);
     const kidsSpent = Math.floor(Math.random() * Math.min(kidsEarned, 1500));
+    const mosbiletEarned = Math.floor(Math.random() * 1500);
+    const mosbiletSpent = Math.floor(Math.random() * Math.min(mosbiletEarned, 1200));
 
     return {
       id: i + 1,
@@ -182,6 +193,9 @@ const generateUserData = (): UserData[] => {
       kidsPointsEarned: kidsEarned,
       kidsPointsSpent: kidsSpent,
       kidsPointsBalance: kidsEarned - kidsSpent,
+      mosbiletPointsEarned: mosbiletEarned,
+      mosbiletPointsSpent: mosbiletSpent,
+      mosbiletPointsBalance: mosbiletEarned - mosbiletSpent,
       gender: pick(GENDERS),
       birthDate,
       maritalStatus: pick(MARITAL_STATUSES),
@@ -277,6 +291,9 @@ export const applyFilters = (data: UserData[], filters: FiltersState, search: st
     if (!matchRange(user.kidsPointsEarned, filters.kidsPointsEarned)) return false;
     if (!matchRange(user.kidsPointsSpent, filters.kidsPointsSpent)) return false;
     if (!matchRange(user.kidsPointsBalance, filters.kidsPointsBalance)) return false;
+    if (!matchRange(user.mosbiletPointsEarned, filters.mosbiletPointsEarned)) return false;
+    if (!matchRange(user.mosbiletPointsSpent, filters.mosbiletPointsSpent)) return false;
+    if (!matchRange(user.mosbiletPointsBalance, filters.mosbiletPointsBalance)) return false;
 
     if (!matchSelect(user.activityGroup, filters.activityGroup)) return false;
     if (!matchSelect(user.loyaltyGroup, filters.loyaltyGroup)) return false;
