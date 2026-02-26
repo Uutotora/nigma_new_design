@@ -1,0 +1,80 @@
+body {
+  font-family: 'Roboto', sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+// Global motion tokens
+:root {
+  --motion-fast: 100ms;
+  --motion-mid: 160ms;
+  --motion-slow: 220ms;
+  --motion-ease: cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+// Smooth default transitions for common UI elements
+.q-btn,
+.q-card,
+.q-layout,
+.q-page,
+.q-page-container,
+.q-header,
+.q-toolbar,
+.q-drawer,
+.q-field__control,
+.q-field__native,
+.q-menu,
+.q-dialog__inner,
+.q-tabs,
+.q-item,
+.q-tab,
+.q-tab-panel,
+.q-tab-panels,
+.q-breadcrumbs,
+.q-breadcrumbs-el,
+.q-table__middle,
+.q-table__container,
+.q-expansion-item__content,
+.q-expansion-item__header,
+.q-list,
+.q-chip,
+.q-badge,
+.content-wrapper,
+.list-card,
+.filters-panel,
+.table-card,
+.summary-card,
+.recosys-card {
+  transition:
+    background-color var(--motion-fast) var(--motion-ease),
+    color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease),
+    opacity var(--motion-fast) var(--motion-ease),
+    filter var(--motion-fast) var(--motion-ease);
+}
+
+// Page transition
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity var(--motion-slow) var(--motion-ease), transform var(--motion-slow) var(--motion-ease);
+}
+
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+// Remove default drawer border
+.q-drawer--left {
+  border-right: none !important;
+}
+
+// Ensure page container fills properly
+.q-page-container {
+  background-color: #027be3;
+}

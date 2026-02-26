@@ -1,0 +1,24 @@
+{
+  "name": "nigma-dashboard",
+  "version": "0.0.1",
+  "description": "Nigma Dashboard",
+  "productName": "Nigma Dashboard",
+  "private": true,
+  "scripts": {
+    "dev": "quasar dev",
+    "build": "quasar build",
+    "lint": "eslint --ext .js,.ts,.vue ./src"
+  },
+  "dependencies": {
+    "vue": "^3.4.0",
+    "vue-router": "^4.3.0",
+    "quasar": "^2.16.0",
+    "@quasar/extras": "^1.16.0",
+    "pinia": "^2.1.0"
+  },
+  "devDependencies": {
+    "@quasar/app-vite": "^2.0.0",
+    "typescript": "~5.5.0",
+    "vue-tsc": "^2.0.0"
+  }
+}
