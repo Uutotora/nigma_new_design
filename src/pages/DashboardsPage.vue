@@ -69,10 +69,10 @@ const dashboards: DashboardItem[] = [
     0 3px 7px -3px rgba(0, 0, 0, 0.3);
   text-decoration: none;
   color: #00008b;
-  font-size: 38px;
+  font-size: clamp(32px, 2vw, 38px);
   text-align: center;
   cursor: pointer;
-  font: inherit;
+  font-family: inherit;
 
   &:hover {
     box-shadow:
