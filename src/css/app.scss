@@ -8,40 +8,25 @@ html {
 
 // Global motion tokens
 :root {
-  --motion-fast: 100ms;
-  --motion-mid: 160ms;
-  --motion-slow: 220ms;
-  --motion-ease: cubic-bezier(0.2, 0.9, 0.2, 1);
+  --motion-fast: 150ms;
+  --motion-mid: 220ms;
+  --motion-slow: 300ms;
+  --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-enter: cubic-bezier(0.0, 0, 0.2, 1);
+  --motion-leave: cubic-bezier(0.4, 0, 1, 1);
 }
 
-// Smooth default transitions for common UI elements
+// Smooth default transitions for interactive UI elements
 .q-btn,
 .q-card,
-.q-layout,
-.q-page,
-.q-page-container,
-.q-header,
-.q-toolbar,
-.q-drawer,
 .q-field__control,
 .q-field__native,
 .q-menu,
 .q-dialog__inner,
-.q-tabs,
 .q-item,
 .q-tab,
-.q-tab-panel,
-.q-tab-panels,
-.q-breadcrumbs,
-.q-breadcrumbs-el,
-.q-table__middle,
-.q-table__container,
-.q-expansion-item__content,
-.q-expansion-item__header,
-.q-list,
 .q-chip,
 .q-badge,
-.content-wrapper,
 .list-card,
 .filters-panel,
 .table-card,
@@ -51,22 +36,22 @@ html {
     background-color var(--motion-fast) var(--motion-ease),
     color var(--motion-fast) var(--motion-ease),
     border-color var(--motion-fast) var(--motion-ease),
-    box-shadow var(--motion-fast) var(--motion-ease),
-    transform var(--motion-fast) var(--motion-ease),
-    opacity var(--motion-fast) var(--motion-ease),
-    filter var(--motion-fast) var(--motion-ease);
+    box-shadow var(--motion-mid) var(--motion-ease),
+    opacity var(--motion-fast) var(--motion-ease);
 }
 
-// Page transition
-.page-fade-enter-active,
-.page-fade-leave-active {
-  transition: opacity var(--motion-slow) var(--motion-ease), transform var(--motion-slow) var(--motion-ease);
+// Content appears smoothly on page load/navigation
+.content-wrapper {
+  animation: content-in 0.35s cubic-bezier(0.0, 0, 0.2, 1) both;
 }
 
-.page-fade-enter-from,
-.page-fade-leave-to {
-  opacity: 0;
-  transform: translateY(6px);
+@keyframes content-in {
+  from {
+    transform: none;
+  }
+  to {
+    transform: none;
+  }
 }
 
 // Remove default drawer border
@@ -77,4 +62,38 @@ html {
 // Ensure page container fills properly
 .q-page-container {
   background-color: #027be3;
+}
+
+// Smooth tab-panel transitions inside pages
+.q-tab-panels {
+  .q-tab-panel {
+    animation: tab-panel-in var(--motion-slow) var(--motion-enter);
+  }
+}
+
+@keyframes tab-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Route transitions
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: none;
+  will-change: auto;
+}
+
+.page-fade-leave-active {
+  transition-timing-function: initial;
+}
+
+.page-fade-enter-from,
+.page-fade-leave-to {
+  transform: none;
 }

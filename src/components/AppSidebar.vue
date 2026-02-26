@@ -187,11 +187,18 @@ function setActiveExtra(index: number) {
   border-radius: 6px;
   margin: 3px 0;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition:
+    background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
 
   &:hover {
     background-color: rgba(255, 255, 255, 0.14);
+    transform: scale(1.03);
+  }
+
+  &:active {
+    transform: scale(0.97);
   }
 
   &--active {
@@ -237,7 +244,7 @@ function setActiveExtra(index: number) {
 
 .extra-fade-enter-active,
 .extra-fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .extra-fade-enter-from,
@@ -245,15 +252,18 @@ function setActiveExtra(index: number) {
   opacity: 0;
 }
 
-.extra-slide-enter-active,
+.extra-slide-enter-active {
+  transition: opacity 0.25s cubic-bezier(0.0, 0, 0.2, 1), transform 0.25s cubic-bezier(0.0, 0, 0.2, 1);
+}
+
 .extra-slide-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.18s cubic-bezier(0.4, 0, 1, 1), transform 0.18s cubic-bezier(0.4, 0, 1, 1);
 }
 
 .extra-slide-enter-from,
 .extra-slide-leave-to {
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translateY(-8px);
 }
 
 .extra-tab {
@@ -265,11 +275,18 @@ function setActiveExtra(index: number) {
   padding: 6px 4px 4px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition:
+    background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
 
   &:hover {
     background-color: rgba(255, 255, 255, 0.15);
+    transform: scale(1.03);
+  }
+
+  &:active {
+    transform: scale(0.97);
   }
 
   &--active {

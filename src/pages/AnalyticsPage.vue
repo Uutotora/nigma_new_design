@@ -693,11 +693,11 @@ const updateActionsTicked = (next: string[]) => {
 };
 
 const toggleTreeNode = (
-  tickedRef: { value: string[] },
+  currentTicked: string[],
   updateFn: (next: string[]) => void,
   nodeId: string,
 ) => {
-  const next = new Set(tickedRef.value);
+  const next = new Set(currentTicked);
   if (next.has(nodeId)) {
     next.delete(nodeId);
   } else {
