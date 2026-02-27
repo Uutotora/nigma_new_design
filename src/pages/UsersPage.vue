@@ -201,13 +201,16 @@
                       <div class="info-groups">
                         <div v-for="g in groups" :key="g.label" class="gentry">
                           <span class="gentry__label">{{ g.label }}</span>
-                          <span class="gbadge text-white" :class="g.bgClass">{{ g.value }}</span>
+                          <span class="gbadge text-white" :class="g.bgClass">
+                            {{ g.value }}
+                            <q-tooltip>тут будет описание</q-tooltip>
+                          </span>
                         </div>
                       </div>
                       <div class="info-stats">
                         <div>
                           <span class="stat-label">Всего активностей</span>
-                          <span class="stat-big">1 412</span>
+                          <button type="button" class="stat-big stat-big--link" @click="activeSection = 'activity'">1 412</button>
                         </div>
                         <div class="q-mt-sm">
                           <span class="stat-label">Последняя активность</span>
@@ -1221,6 +1224,17 @@ const tags = [
 
 .stat-label { display: block; font-size: 11px; color: #9e9e9e; margin-bottom: 2px; }
 .stat-big   { display: block; font-size: 22px; font-weight: 800; color: #1a1a1a; }
+.stat-big--link {
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.2s ease;
+}
+.stat-big--link:hover {
+  color: #027be3;
+}
 .stat-activity { display: block; font-size: 12px; font-weight: 600; color: #1a1a1a; line-height: 1.4; }
 
 /* ════════════════════════════
