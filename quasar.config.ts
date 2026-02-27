@@ -1,6 +1,8 @@
 import { configure } from 'quasar/wrappers';
 
 export default configure(() => {
+  const basePath = (process.env.BUILD_BASE_PATH ?? 'nigma_new_design').trim().replace(/^\/+|\/+$/g, '');
+
   return {
     boot: [],
 
@@ -15,7 +17,7 @@ export default configure(() => {
     build: {
       target: { browser: ['es2022', 'firefox115', 'chrome115', 'safari14'] },
       vueRouterMode: 'hash',
-      publicPath: '/nigma_new_design/',
+      publicPath: basePath ? `/${basePath}/` : '/',
     },
 
     devServer: {
