@@ -90,11 +90,8 @@
               <UserMetricsTab />
             </q-tab-panel>
 
-            <q-tab-panel
-              v-for="tab in ['loyalty']"
-              :key="tab" :name="tab"
-            >
-              <p class="text-grey-6">Раздел в разработке</p>
+            <q-tab-panel name="loyalty" class="q-pa-none q-pt-sm">
+              <UserLoyaltyTab />
             </q-tab-panel>
           </q-tab-panels>
         </div>
@@ -112,6 +109,7 @@ import UserRecosysTab from 'src/pages/users/UserRecosysTab.vue';
 import UserPointsTab from 'src/pages/users/UserPointsTab.vue';
 import UserMessagesTab from 'src/pages/users/UserMessagesTab.vue';
 import UserMetricsTab from 'src/pages/users/UserMetricsTab.vue';
+import UserLoyaltyTab from 'src/pages/users/UserLoyaltyTab.vue';
 
 const activeSection  = ref('profile');
 const route = useRoute();
