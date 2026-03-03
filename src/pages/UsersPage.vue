@@ -78,8 +78,12 @@
               <UserActivityTab />
             </q-tab-panel>
 
+            <q-tab-panel name="points" class="q-pa-none q-pt-sm">
+              <UserPointsTab />
+            </q-tab-panel>
+
             <q-tab-panel
-              v-for="tab in ['loyalty','points','messages','metrics']"
+              v-for="tab in ['loyalty','messages','metrics']"
               :key="tab" :name="tab"
             >
               <p class="text-grey-6">Раздел в разработке</p>
@@ -97,6 +101,7 @@ import { useRoute } from 'vue-router';
 import UserActivityTab from 'src/pages/users/UserActivityTab.vue';
 import UserProfileTab from 'src/pages/users/UserProfileTab.vue';
 import UserRecosysTab from 'src/pages/users/UserRecosysTab.vue';
+import UserPointsTab from 'src/pages/users/UserPointsTab.vue';
 
 const activeSection  = ref('profile');
 const route = useRoute();
