@@ -27,28 +27,44 @@
       </div>
 
       <div class="summary-cards">
-        <button
+        <div
           v-for="item in activitySummaryItems"
           :key="item.label"
-          type="button"
           class="activity-summary-card"
-          :class="{ 'activity-summary-card--active': item.active }"
-          @click="setQuickProject(item.label)"
         >
-          <div class="activity-summary-card__icon">
-            <img
-              v-if="item.iconType === 'img'"
-              :src="item.iconSrc"
-              :alt="item.label"
-              class="activity-summary-card__img"
-            />
-            <q-icon v-else :name="item.icon" color="white" size="18px" />
+          <div class="activity-summary-card__name">{{ item.label }}</div>
+          <div class="activity-summary-card__row">
+            <div class="activity-summary-card__icon">
+              <img
+                v-if="item.iconType === 'img'"
+                :src="item.iconSrc"
+                :alt="item.label"
+                class="activity-summary-card__img"
+              />
+              <q-icon v-else :name="item.icon" color="white" size="22px" />
+            </div>
+            <div class="activity-summary-card__values">
+              <button
+                type="button"
+                class="activity-summary-card__value activity-summary-card__value--base"
+                :class="{ 'activity-summary-card__value--active-base': item.activeBase }"
+                @click="setQuickProject(item.label, 'base')"
+              >
+                <span class="activity-summary-card__value-number">{{ item.baseCount }}</span>
+                <span class="activity-summary-card__value-label">Проект</span>
+              </button>
+              <button
+                type="button"
+                class="activity-summary-card__value activity-summary-card__value--loyalty"
+                :class="{ 'activity-summary-card__value--active-loyalty': item.activeLoyalty }"
+                @click="setQuickProject(item.label, 'loyalty')"
+              >
+                <span class="activity-summary-card__value-number">{{ item.loyaltyCount }}</span>
+                <span class="activity-summary-card__value-label">ПЛ</span>
+              </button>
+            </div>
           </div>
-          <div class="activity-summary-card__body">
-            <div class="activity-summary-card__label">{{ item.label }}</div>
-            <div class="activity-summary-card__value">{{ item.count }}</div>
-          </div>
-        </button>
+        </div>
       </div>
     </div>
 
@@ -58,47 +74,29 @@
       </div>
 
       <div class="activity-filters">
+        <div class="project-chips-row">
+          <span class="project-chips-label">Проекты</span>
+          <div class="project-chips">
+            <button
+              v-for="(leafId, idx) in activityProjectLeafIds"
+              :key="leafId"
+              type="button"
+              class="project-chip"
+              :class="{ 'project-chip--on': activityProjectsTicked.includes(leafId) }"
+              @click="toggleProjectChip(leafId)"
+            >
+              {{ ACTIVITY_PROJECTS[idx] }}
+            </button>
+          </div>
+          <button type="button" class="project-chip project-chip--all" @click="toggleAllProjects">
+            {{ allProjectsChipsSelected ? 'Снять все' : 'Все' }}
+          </button>
+        </div>
+
         <div class="filters-row">
           <q-btn-dropdown
-            class="filter-dropdown"
-            no-caps
-            unelevated
-            dropdown-icon="mdi-chevron-down"
-            menu-anchor="bottom left"
-            menu-self="top left"
-            :menu-offset="[0, 6]"
-            menu-class="filters-menu"
-          >
-            <template #label>
-              <div class="filter-dropdown__content">
-                <div class="filter-dropdown__label">Проекты</div>
-                <div class="filter-dropdown__value">{{ activityProjectsDisplay }}</div>
-              </div>
-            </template>
-            <div class="filters-menu__content">
-              <q-tree
-                :nodes="activityProjectTree"
-                node-key="id"
-                v-model:expanded="activityProjectsExpanded"
-                dense
-              >
-                <template #default-header="prop">
-                  <div class="tree-item" @click="toggleTreeNode(activityProjectsTicked, updateActivityProjectsTicked, prop.key)">
-                    <q-checkbox
-                      :model-value="activityProjectsTicked.includes(prop.key)"
-                      dense
-                      @update:model-value="() => toggleTreeNode(activityProjectsTicked, updateActivityProjectsTicked, prop.key)"
-                      @click.stop
-                    />
-                    <div class="tree-item__label">{{ prop.node.label }}</div>
-                  </div>
-                </template>
-              </q-tree>
-            </div>
-          </q-btn-dropdown>
-
-          <q-btn-dropdown
-            class="filter-dropdown"
+            ref="actionsDropdownRef"
+            class="filter-dropdown filter-dropdown--actions"
             no-caps
             unelevated
             dropdown-icon="mdi-chevron-down"
@@ -134,6 +132,25 @@
               </q-tree>
             </div>
           </q-btn-dropdown>
+
+          <div class="filters-apply-group">
+            <q-btn
+              color="primary"
+              label="Применить"
+              class="apply-btn apply-btn--inline"
+              @click="applyActivityFilters"
+            />
+            <q-btn
+              flat
+              round
+              icon="mdi-trash-can-outline"
+              color="grey-6"
+              class="reset-activity-btn"
+              @click="resetActivityFilters"
+            >
+              <q-tooltip>Сбросить фильтры</q-tooltip>
+            </q-btn>
+          </div>
         </div>
 
         <div class="filters-actions">
@@ -166,14 +183,7 @@
             </button>
           </div>
 
-          <div class="filters-actions__right">
-            <q-btn
-              color="primary"
-              label="Применить"
-              class="apply-btn"
-              @click="applyActivityFilters"
-            />
-          </div>
+          <div class="filters-actions__right" />
         </div>
       </div>
     </div>
@@ -276,8 +286,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { ALL_PROJECTS } from 'src/data/users';
+import { computed, nextTick, ref } from 'vue';
 import { ACTIVITY_ACTION_GROUPS } from 'src/data/activity';
 
 const iconActiveg = new URL('../../css/activeg.74063d19.svg', import.meta.url).href;
@@ -285,6 +294,84 @@ const iconOur = new URL('../../css/our.e8350a8e.svg', import.meta.url).href;
 const iconHome = new URL('../../css/home.55681fec.svg', import.meta.url).href;
 const iconTask = new URL('../../css/task.35b75734.svg', import.meta.url).href;
 const iconPrize = new URL('../../css/prize.fa0e6560.svg', import.meta.url).href;
+const iconCityideas = new URL('../../css/cityideas.svg', import.meta.url).href;
+
+const actionsDropdownRef = ref<{ show: () => void } | null>(null);
+
+type ActionKind = 'base' | 'loyalty';
+
+type ProjectDef = {
+  id: string;
+  label: string;
+};
+
+const PROJECT_DEFS: ProjectDef[] = [
+  { id: 'eldom', label: 'Электронный дом' },
+  { id: 'kids', label: 'Активный гражданин - детям' },
+  { id: 'activeg', label: 'Активный гражданин' },
+  { id: 'milp', label: 'Миллион призов' },
+  { id: 'cityideas', label: 'Город идей' },
+  { id: 'citytasks', label: 'Город заданий' },
+  { id: 'ourcity', label: 'Наш город' },
+];
+
+const ACTIVITY_PROJECTS = PROJECT_DEFS.map((project) => project.label);
+
+const BASE_ACTION_GROUPS = ACTIVITY_ACTION_GROUPS.filter((group) => group.id !== 'loyalty');
+
+const baseActionsByProject: Record<string, string[]> = Object.fromEntries(
+  PROJECT_DEFS.map((project) => {
+    const group = BASE_ACTION_GROUPS.find((item) => item.id === project.id);
+    return [project.label, group?.actions ?? []];
+  }),
+);
+
+const loyaltyActions = ACTIVITY_ACTION_GROUPS.find((group) => group.id === 'loyalty')?.actions ?? [];
+const loyaltyActionsByProject: Record<string, string[]> = Object.fromEntries(
+  PROJECT_DEFS.map((project) => [project.label, []]),
+);
+
+const resolveLoyaltyProject = (action: string): string | null => {
+  const normalized = action.toLowerCase();
+  const matchers: { project: string; tokens: string[] }[] = [
+    { project: 'Активный гражданин - детям', tokens: ['активный гражданин детям', 'активный гражданин - детям'] },
+    { project: 'Город заданий', tokens: ['город заданий'] },
+    { project: 'Город идей', tokens: ['город идей'] },
+    { project: 'Наш город', tokens: ['наш город'] },
+    { project: 'Электронный дом', tokens: ['электронный дом'] },
+    { project: 'Миллион призов', tokens: ['миллион призов', 'миллион приз'] },
+    { project: 'Активный гражданин', tokens: ['активный гражданин'] },
+  ];
+
+  for (const matcher of matchers) {
+    if (matcher.tokens.some((token) => normalized.includes(token))) {
+      return matcher.project;
+    }
+  }
+  return null;
+};
+
+const loyaltyFallbackProject = 'Миллион призов';
+const unmatchedLoyaltyActions: string[] = [];
+
+loyaltyActions.forEach((action) => {
+  const project = resolveLoyaltyProject(action);
+  if (project && loyaltyActionsByProject[project]) {
+    loyaltyActionsByProject[project].push(action);
+  } else {
+    unmatchedLoyaltyActions.push(action);
+  }
+});
+
+if (loyaltyActionsByProject[loyaltyFallbackProject]) {
+  unmatchedLoyaltyActions.forEach((action) => {
+    loyaltyActionsByProject[loyaltyFallbackProject].push(action);
+  });
+}
+
+const loyaltyActionSetByProject: Record<string, Set<string>> = Object.fromEntries(
+  Object.entries(loyaltyActionsByProject).map(([project, actions]) => [project, new Set(actions)]),
+);
 
 const activityView = ref<'table' | 'chart'>('table');
 const activityTimeScale = ref<'days' | 'months' | 'years'>('months');
@@ -308,18 +395,18 @@ type ActivityRow = {
 };
 
 const ACTIVITY_PROJECT_ROOT_ID = 'activity_projects';
-const activityProjectLeafIds = ALL_PROJECTS.map((_, index) => `activity_project_${index}`);
+const activityProjectLeafIds = ACTIVITY_PROJECTS.map((_, index) => `activity_project_${index}`);
 const activityProjectLabelById: Record<string, string> = Object.fromEntries(
-  activityProjectLeafIds.map((id, index) => [id, ALL_PROJECTS[index]]),
+  activityProjectLeafIds.map((id, index) => [id, ACTIVITY_PROJECTS[index]]),
 );
 const activityProjectIdByLabel: Record<string, string> = Object.fromEntries(
-  ALL_PROJECTS.map((label, index) => [label, activityProjectLeafIds[index]]),
+  ACTIVITY_PROJECTS.map((label, index) => [label, activityProjectLeafIds[index]]),
 );
 const activityProjectTree = [
   {
     id: ACTIVITY_PROJECT_ROOT_ID,
     label: 'Выбрать все',
-    children: ALL_PROJECTS.map((project, index) => ({
+    children: ACTIVITY_PROJECTS.map((project, index) => ({
       id: activityProjectLeafIds[index],
       label: project,
     })),
@@ -374,97 +461,122 @@ const activityProjectsDisplay = computed(() => {
 });
 
 const ACTIVITY_ACTION_ROOT_ID = 'activity_actions';
-const activityActionGroups = ACTIVITY_ACTION_GROUPS;
-const activityActionGroupIds = activityActionGroups.map((group) => `${group.id}_all`);
-const activityActionLeafs = activityActionGroups.flatMap((group) =>
-  group.actions.map((action, index) => ({
-    id: `${group.id}_${index}`,
-    label: action,
-    groupId: `${group.id}_all`,
-  })),
-);
-const activityActionLeafIds = activityActionLeafs.map((leaf) => leaf.id);
-const activityActionLabelById: Record<string, string> = Object.fromEntries(
-  activityActionLeafs.map((leaf) => [leaf.id, leaf.label]),
-);
-const activityActionLeafToGroupId: Record<string, string> = Object.fromEntries(
-  activityActionLeafs.map((leaf) => [leaf.id, leaf.groupId]),
-);
-const activityActionGroupToLeafIds: Record<string, string[]> = Object.fromEntries(
-  activityActionGroups.map((group) => [
-    `${group.id}_all`,
-    group.actions.map((_, index) => `${group.id}_${index}`),
-  ]),
-);
-const activityActionLeafIdSet = new Set(activityActionLeafIds);
-const activityActionGroupIdSet = new Set(activityActionGroupIds);
+const actionMetaByLeafId: Record<string, { project: string; action: string; type: ActionKind }> = {};
+const leafIdsByProjectAndType: Record<string, { base: string[]; loyalty: string[] }> = {};
+const projectGroupIdByLabel: Record<string, string> = {};
+const subgroupIdByLabelType: Record<string, { base: string; loyalty: string }> = {};
+const actionLeafIdByProjectType: Record<string, { base: Record<string, string>; loyalty: Record<string, string> }> = {};
+const groupToLeafIds: Record<string, string[]> = {};
+const activityActionLeafIds: string[] = [];
+const baseActionLeafIds: string[] = [];
+const loyaltyActionLeafIds: string[] = [];
+const projectGroupIds: string[] = [];
+const subgroupIds: string[] = [];
 
 const activityActionTree = [
   {
     id: ACTIVITY_ACTION_ROOT_ID,
     label: 'Выбрать все',
-    children: activityActionGroups.map((group) => ({
-      id: `${group.id}_all`,
-      label: group.label,
-      children: group.actions.map((action, index) => ({
-        id: `${group.id}_${index}`,
-        label: action,
-      })),
-    })),
+    children: PROJECT_DEFS.map((project) => {
+      const projectGroupId = `activity_actions_${project.id}`;
+      projectGroupIdByLabel[project.label] = projectGroupId;
+      projectGroupIds.push(projectGroupId);
+      const baseGroupId = `${projectGroupId}_base`;
+      const loyaltyGroupId = `${projectGroupId}_loyalty`;
+      subgroupIds.push(baseGroupId, loyaltyGroupId);
+      subgroupIdByLabelType[project.label] = { base: baseGroupId, loyalty: loyaltyGroupId };
+      actionLeafIdByProjectType[project.label] = { base: {}, loyalty: {} };
+
+      const baseLeafs = (baseActionsByProject[project.label] ?? []).map((action, index) => {
+        const leafId = `${baseGroupId}_${index}`;
+        activityActionLeafIds.push(leafId);
+        baseActionLeafIds.push(leafId);
+        actionMetaByLeafId[leafId] = { project: project.label, action, type: 'base' };
+        actionLeafIdByProjectType[project.label].base[action] = leafId;
+        return { id: leafId, label: action };
+      });
+
+      const loyaltyLeafs = (loyaltyActionsByProject[project.label] ?? []).map((action, index) => {
+        const leafId = `${loyaltyGroupId}_${index}`;
+        activityActionLeafIds.push(leafId);
+        loyaltyActionLeafIds.push(leafId);
+        actionMetaByLeafId[leafId] = { project: project.label, action, type: 'loyalty' };
+        actionLeafIdByProjectType[project.label].loyalty[action] = leafId;
+        return { id: leafId, label: action };
+      });
+
+      leafIdsByProjectAndType[project.label] = {
+        base: baseLeafs.map((leaf) => leaf.id),
+        loyalty: loyaltyLeafs.map((leaf) => leaf.id),
+      };
+
+      groupToLeafIds[baseGroupId] = baseLeafs.map((leaf) => leaf.id);
+      groupToLeafIds[loyaltyGroupId] = loyaltyLeafs.map((leaf) => leaf.id);
+      groupToLeafIds[projectGroupId] = [...groupToLeafIds[baseGroupId], ...groupToLeafIds[loyaltyGroupId]];
+
+      return {
+        id: projectGroupId,
+        label: `Все действия по проекту "${project.label}"`,
+        children: [
+          {
+            id: baseGroupId,
+            label: `Действия по проекту "${project.label}"`,
+            children: baseLeafs,
+          },
+          {
+            id: loyaltyGroupId,
+            label: `Действия по проекту "${project.label}" программа лояльности`,
+            children: loyaltyLeafs,
+          },
+        ],
+      };
+    }),
   },
 ];
 
-const activityActionsTicked = ref<string[]>([]);
+groupToLeafIds[ACTIVITY_ACTION_ROOT_ID] = [...activityActionLeafIds];
+
+const activityActionLeafIdSet = new Set(activityActionLeafIds);
+const baseActionLeafIdSet = new Set(baseActionLeafIds);
+const loyaltyActionLeafIdSet = new Set(loyaltyActionLeafIds);
+const selectedActionLeafIds = ref<string[]>([...activityActionLeafIds]);
+
 const activityActionsExpanded = ref<string[]>([
   ACTIVITY_ACTION_ROOT_ID,
-  `${activityActionGroups[0]?.id ?? 'eldom'}_all`,
+  `activity_actions_${PROJECT_DEFS[0]?.id ?? 'eldom'}`,
 ]);
 
-const normalizeActivityActions = (ids: string[]) => {
-  if (ids.includes(ACTIVITY_ACTION_ROOT_ID)) return [...activityActionLeafIds];
-  const selected = new Set<string>();
-  ids.forEach((id) => {
-    if (activityActionLeafIdSet.has(id)) selected.add(id);
-    const groupLeaves = activityActionGroupToLeafIds[id];
-    if (groupLeaves) groupLeaves.forEach((leafId) => selected.add(leafId));
-  });
-  return activityActionLeafIds.filter((id) => selected.has(id));
-};
+const buildTickedFromLeaves = (leafIds: string[]) => {
+  const selected = new Set(leafIds);
+  const ticked: string[] = [...selected];
 
-const updateActivityActionsTicked = (next: string[]) => {
-  const hadRoot = activityActionsTicked.value.includes(ACTIVITY_ACTION_ROOT_ID);
-  const hasRoot = next.includes(ACTIVITY_ACTION_ROOT_ID);
-
-  if (hasRoot && !hadRoot) {
-    activityActionsTicked.value = [ACTIVITY_ACTION_ROOT_ID, ...activityActionGroupIds, ...activityActionLeafIds];
-    return;
-  }
-
-  const leafSet = new Set<string>();
-  next.forEach((id) => {
-    if (activityActionLeafIdSet.has(id)) leafSet.add(id);
-    if (activityActionGroupIdSet.has(id)) {
-      const groupLeaves = activityActionGroupToLeafIds[id] ?? [];
-      groupLeaves.forEach((leafId) => leafSet.add(leafId));
+  subgroupIds.forEach((groupId) => {
+    const leaves = groupToLeafIds[groupId] ?? [];
+    if (leaves.length > 0 && leaves.every((leafId) => selected.has(leafId))) {
+      ticked.push(groupId);
     }
   });
 
-  const allLeavesSelected = leafSet.size === activityActionLeafIds.length && activityActionLeafIds.length > 0;
+  projectGroupIds.forEach((groupId) => {
+    const leaves = groupToLeafIds[groupId] ?? [];
+    if (leaves.length > 0 && leaves.every((leafId) => selected.has(leafId))) {
+      ticked.push(groupId);
+    }
+  });
 
-  if (!hasRoot && hadRoot && allLeavesSelected) {
-    activityActionsTicked.value = [];
-    return;
+  if (activityActionLeafIds.length > 0 && selected.size === activityActionLeafIds.length) {
+    ticked.push(ACTIVITY_ACTION_ROOT_ID);
   }
 
-  const resolvedGroups = activityActionGroupIds.filter((groupId) =>
-    (activityActionGroupToLeafIds[groupId] ?? []).every((leafId) => leafSet.has(leafId)),
-  );
+  return ticked;
+};
 
-  activityActionsTicked.value = [
-    ...(allLeavesSelected ? [ACTIVITY_ACTION_ROOT_ID] : []),
-    ...resolvedGroups,
-    ...leafSet,
-  ];
+const activityActionsTicked = computed(() => buildTickedFromLeaves(selectedActionLeafIds.value));
+
+const isGroupFullySelected = (groupId: string) => {
+  const leaves = groupToLeafIds[groupId] ?? [];
+  if (leaves.length === 0) return false;
+  return leaves.every((leafId) => selectedActionLeafIds.value.includes(leafId));
 };
 
 const toggleTreeNode = (
@@ -482,43 +594,36 @@ const toggleTreeNode = (
 };
 
 const toggleActivityActionNode = (nodeId: string) => {
-  const next = new Set(activityActionsTicked.value);
-
   if (nodeId === ACTIVITY_ACTION_ROOT_ID) {
-    if (next.has(nodeId)) {
-      next.delete(nodeId);
+    if (selectedActionLeafIds.value.length === activityActionLeafIds.length) {
+      selectedActionLeafIds.value = [];
     } else {
-      next.add(nodeId);
+      selectedActionLeafIds.value = [...activityActionLeafIds];
     }
-    updateActivityActionsTicked([...next]);
     return;
   }
 
-  const groupLeaves = activityActionGroupToLeafIds[nodeId];
+  const groupLeaves = groupToLeafIds[nodeId];
   if (groupLeaves) {
-    const isSelected = next.has(nodeId);
-    if (isSelected) {
-      next.delete(nodeId);
-      groupLeaves.forEach((leafId) => next.delete(leafId));
+    if (isGroupFullySelected(nodeId)) {
+      selectedActionLeafIds.value = selectedActionLeafIds.value.filter((id) => !groupLeaves.includes(id));
     } else {
-      next.add(nodeId);
-      groupLeaves.forEach((leafId) => next.add(leafId));
+      const next = new Set(selectedActionLeafIds.value);
+      groupLeaves.forEach((id) => next.add(id));
+      selectedActionLeafIds.value = [...next];
     }
-    updateActivityActionsTicked([...next]);
     return;
   }
 
-  if (next.has(nodeId)) {
-    next.delete(nodeId);
-    const groupId = activityActionLeafToGroupId[nodeId];
-    if (groupId) next.delete(groupId);
+  if (!activityActionLeafIdSet.has(nodeId)) return;
+  if (selectedActionLeafIds.value.includes(nodeId)) {
+    selectedActionLeafIds.value = selectedActionLeafIds.value.filter((id) => id !== nodeId);
   } else {
-    next.add(nodeId);
+    selectedActionLeafIds.value = [...selectedActionLeafIds.value, nodeId];
   }
-  updateActivityActionsTicked([...next]);
 };
 
-const activitySelectedActionIds = computed(() => normalizeActivityActions(activityActionsTicked.value));
+const activitySelectedActionIds = computed(() => [...selectedActionLeafIds.value]);
 const activityActionsDisplay = computed(() => {
   const count = activitySelectedActionIds.value.length;
   if (count === 0) return 'Выберите действия';
@@ -527,23 +632,106 @@ const activityActionsDisplay = computed(() => {
 });
 
 const appliedActivityProjects = ref<string[]>([]);
-const appliedActivityActions = ref<string[]>([]);
+const appliedActivityActionLeafIds = ref<string[]>([]);
+const lastQuickSelection = ref<{ label: string; kind: ActionKind } | null>(null);
+const userHasMadeSelection = ref(false);
 
 const applyActivityFilters = () => {
   appliedActivityProjects.value = [...activitySelectedProjectLabels.value];
-  appliedActivityActions.value = activitySelectedActionIds.value
-    .map((id) => activityActionLabelById[id])
-    .filter(Boolean);
+  appliedActivityActionLeafIds.value = [...activitySelectedActionIds.value];
 };
 
-const setQuickProject = (label: string) => {
+const toggleProjectChip = (leafId: string) => {
+  const projectLabel = activityProjectLabelById[leafId];
+  const isOn = activityProjectsTicked.value.includes(leafId);
+
+  // Обновляем список выбранных проектов
+  const leaves = new Set(activityProjectsTicked.value.filter((id) => id !== ACTIVITY_PROJECT_ROOT_ID));
+  if (isOn) {
+    leaves.delete(leafId);
+  } else {
+    leaves.add(leafId);
+  }
+  const leafArr = [...leaves];
+  activityProjectsTicked.value = leafArr.length === activityProjectLeafIds.length
+    ? [ACTIVITY_PROJECT_ROOT_ID, ...leafArr]
+    : leafArr;
+
+  // Обновляем действия: добавляем/убираем все действия этого проекта
+  const projectAllIds = [
+    ...(leafIdsByProjectAndType[projectLabel]?.base ?? []),
+    ...(leafIdsByProjectAndType[projectLabel]?.loyalty ?? []),
+  ];
+  if (isOn) {
+    selectedActionLeafIds.value = selectedActionLeafIds.value.filter(
+      (id) => !projectAllIds.includes(id),
+    );
+  } else {
+    const next = new Set(selectedActionLeafIds.value);
+    projectAllIds.forEach((id) => next.add(id));
+    selectedActionLeafIds.value = [...next];
+  }
+
+  // Сбрасываем quick-selection и сразу применяем
+  lastQuickSelection.value = null;
+  userHasMadeSelection.value = true;
+  applyActivityFilters();
+};
+
+const allProjectsChipsSelected = computed(
+  () => activityProjectLeafIds.every((id) => activityProjectsTicked.value.includes(id)),
+);
+
+const toggleAllProjects = () => {
+  if (allProjectsChipsSelected.value) {
+    // Снять все = сбросить
+    lastQuickSelection.value = null;
+    userHasMadeSelection.value = false;
+    activityProjectsTicked.value = [];
+    selectedActionLeafIds.value = [];
+    appliedActivityProjects.value = [];
+    appliedActivityActionLeafIds.value = [];
+  } else {
+    // Выбрать все проекты и все действия + применить
+    activityProjectsTicked.value = [ACTIVITY_PROJECT_ROOT_ID, ...activityProjectLeafIds];
+    selectedActionLeafIds.value = [...activityActionLeafIds];
+    lastQuickSelection.value = null;
+    userHasMadeSelection.value = true;
+    applyActivityFilters();
+  }
+};
+
+const resetActivityFilters = () => {
+  lastQuickSelection.value = null;
+  userHasMadeSelection.value = false;
+  activityProjectsTicked.value = [ACTIVITY_PROJECT_ROOT_ID, ...activityProjectLeafIds];
+  selectedActionLeafIds.value = [...activityActionLeafIds];
+  appliedActivityProjects.value = [];
+  appliedActivityActionLeafIds.value = [];
+};
+
+const stopKeyPropagation = () => {
+  // Intentionally empty: used with `.stop` to prevent bubbling.
+};
+
+const openActionFilter = (label: string, kind: ActionKind) => {
+  const projectGroupId = projectGroupIdByLabel[label];
+  const subgroupId = subgroupIdByLabelType[label]?.[kind];
+  const expanded = [ACTIVITY_ACTION_ROOT_ID, projectGroupId, subgroupId].filter(Boolean);
+  activityActionsExpanded.value = Array.from(new Set(expanded));
+  void nextTick(() => {
+    actionsDropdownRef.value?.show();
+  });
+};
+
+const setQuickProject = (label: string, kind: ActionKind = 'base') => {
   const id = activityProjectIdByLabel[label];
   if (!id) return;
   activityProjectsTicked.value = [id];
-  if (activitySelectedActionIds.value.length === 0) {
-    updateActivityActionsTicked([ACTIVITY_ACTION_ROOT_ID]);
-  }
-  applyActivityFilters();
+  selectedActionLeafIds.value = [...(leafIdsByProjectAndType[label]?.[kind] ?? [])];
+  lastQuickSelection.value = { label, kind };
+  userHasMadeSelection.value = true;
+  openActionFilter(label, kind);
 };
 
 const activityRows: ActivityRow[] = [
@@ -613,7 +801,7 @@ const activityRows: ActivityRow[] = [
   },
   {
     id: 9,
-    project: 'Программа лояльности',
+    project: 'Миллион призов',
     action: 'Перенос очков рейтинга',
     date: '31.12.2021 21:00:00',
     description: '100 баллов: Перенос очков рейтинга',
@@ -625,6 +813,22 @@ const activityRows: ActivityRow[] = [
     action: 'Сообщение в чат',
     date: '12.11.2024 09:18:22',
     description: 'Обсуждение ремонта подъезда',
+    source: 'Нет данных',
+  },
+  {
+    id: 11,
+    project: 'Электронный дом',
+    action: 'За отправку личного сообщения соседу на проекте "Электронный дом"',
+    date: '05.02.2025 11:20:00',
+    description: '',
+    source: 'Нет данных',
+  },
+  {
+    id: 12,
+    project: 'Город заданий',
+    action: 'Регистрация в проекте',
+    date: '02.04.2024 09:10:00',
+    description: '',
     source: 'Нет данных',
   },
 ];
@@ -653,12 +857,18 @@ const isWithinRange = (date: Date | null, start?: string, end?: string) => {
 };
 
 const filteredActivityRows = computed(() => {
-  if (appliedActivityActions.value.length === 0) return [];
-  const actions = new Set(appliedActivityActions.value);
-  const projects = appliedActivityProjects.value.length > 0 ? new Set(appliedActivityProjects.value) : null;
+  if (appliedActivityActionLeafIds.value.length === 0) return [];
+  if (appliedActivityProjects.value.length === 0) return [];
+  const actionPairs = new Set(
+    appliedActivityActionLeafIds.value
+      .map((id) => actionMetaByLeafId[id])
+      .filter(Boolean)
+      .map((meta) => `${meta.project}|||${meta.action}`),
+  );
+  const projects = new Set(appliedActivityProjects.value);
   return activityRows.filter((row) => {
-    if (!actions.has(row.action)) return false;
-    if (projects && !projects.has(row.project)) return false;
+    if (!actionPairs.has(`${row.project}|||${row.action}`)) return false;
+    if (!projects.has(row.project)) return false;
     return isWithinRange(
       parseActivityDate(row.date),
       appliedActivityPeriod.value.startDate,
@@ -678,13 +888,13 @@ const activityColumns = [
 const activityPagination = ref({ page: 1, rowsPerPage: 10 });
 
 const activityNoDataLabel = computed(() =>
-  appliedActivityActions.value.length === 0
+  appliedActivityActionLeafIds.value.length === 0
     ? 'Выберите действия и нажмите «Применить».'
     : 'Нет данных',
 );
 
 const activityChartPlaceholder = computed(() => {
-  if (appliedActivityActions.value.length === 0) return 'Выберите действия и нажмите «Применить».';
+  if (appliedActivityActionLeafIds.value.length === 0) return 'Выберите действия и нажмите «Применить».';
   if (filteredActivityRows.value.length === 0) return 'Нет данных для построения графика.';
   return 'График будет добавлен на следующем этапе.';
 });
@@ -701,27 +911,84 @@ const activitySummaryProjects: SummaryProject[] = [
   { label: 'Наш город', iconType: 'img', iconSrc: iconOur },
   { label: 'Электронный дом', iconType: 'img', iconSrc: iconHome },
   { label: 'Миллион призов', iconType: 'img', iconSrc: iconPrize },
-  { label: 'Программа лояльности', iconType: 'img', iconSrc: iconTask },
+  { label: 'Город заданий', iconType: 'img', iconSrc: iconTask },
+  { label: 'Город идей', iconType: 'img', iconSrc: iconCityideas },
 ];
 
-const activitySummaryItems = computed(() => {
-  const counts = activityRows.reduce<Record<string, number>>((acc, row) => {
-    if (!isWithinRange(
-      parseActivityDate(row.date),
-      appliedActivityPeriod.value.startDate,
-      appliedActivityPeriod.value.endDate,
-    )) {
-      return acc;
-    }
-    acc[row.project] = (acc[row.project] || 0) + 1;
-    return acc;
-  }, {});
-  return activitySummaryProjects.map((item) => ({
-    ...item,
-    count: counts[item.label] ?? 0,
-    active: appliedActivityProjects.value.includes(item.label),
-  }));
+// Всегда показываем тотальные счётчики по периоду, игнорируя выбранные фильтры действий
+const totalCountsByProject = computed(() => {
+  const counts: Record<string, { base: number; loyalty: number }> = {};
+  activityRows.forEach((row) => {
+    if (
+      !isWithinRange(
+        parseActivityDate(row.date),
+        appliedActivityPeriod.value.startDate,
+        appliedActivityPeriod.value.endDate,
+      )
+    ) return;
+    if (!counts[row.project]) counts[row.project] = { base: 0, loyalty: 0 };
+    const isLoyalty = loyaltyActionSetByProject[row.project]?.has(row.action);
+    if (isLoyalty) counts[row.project].loyalty += 1;
+    else counts[row.project].base += 1;
+  });
+  return counts;
 });
+
+// Динамический счётчик только для активной кнопки (реагирует на изменения в фильтрах действий)
+const dynamicCountForActive = computed(() => {
+  const active = lastQuickSelection.value;
+  if (!active) return null;
+  let count = 0;
+  activityRows.forEach((row) => {
+    if (row.project !== active.label) return;
+    if (
+      !isWithinRange(
+        parseActivityDate(row.date),
+        appliedActivityPeriod.value.startDate,
+        appliedActivityPeriod.value.endDate,
+      )
+    ) return;
+    const isLoyalty = loyaltyActionSetByProject[row.project]?.has(row.action);
+    if (active.kind === 'base' && isLoyalty) return;
+    if (active.kind === 'loyalty' && !isLoyalty) return;
+    const leafId =
+      active.kind === 'loyalty'
+        ? actionLeafIdByProjectType[row.project]?.loyalty[row.action]
+        : actionLeafIdByProjectType[row.project]?.base[row.action];
+    if (!leafId || !selectedActionLeafIds.value.includes(leafId)) return;
+    count += 1;
+  });
+  return count;
+});
+
+const activitySummaryItems = computed(() =>
+  activitySummaryProjects.map((item) => {
+    const totals = totalCountsByProject.value[item.label] ?? { base: 0, loyalty: 0 };
+    const baseIds = leafIdsByProjectAndType[item.label]?.base ?? [];
+    const loyaltyIds = leafIdsByProjectAndType[item.label]?.loyalty ?? [];
+
+    // Кнопка активна когда пользователь делал выбор И все действия этого проекта+типа выбраны
+    const isBaseActive = userHasMadeSelection.value
+      && baseIds.length > 0
+      && baseIds.every((id) => selectedActionLeafIds.value.includes(id));
+    const isLoyaltyActive = userHasMadeSelection.value
+      && loyaltyIds.length > 0
+      && loyaltyIds.every((id) => selectedActionLeafIds.value.includes(id));
+
+    // Динамический счётчик только для последней нажатой кнопки (quick-select)
+    const active = lastQuickSelection.value;
+    const isQuickActiveBase = active?.label === item.label && active.kind === 'base';
+    const isQuickActiveLoyalty = active?.label === item.label && active.kind === 'loyalty';
+
+    return {
+      ...item,
+      baseCount: isQuickActiveBase ? (dynamicCountForActive.value ?? totals.base) : totals.base,
+      loyaltyCount: isQuickActiveLoyalty ? (dynamicCountForActive.value ?? totals.loyalty) : totals.loyalty,
+      activeBase: isBaseActive,
+      activeLoyalty: isLoyaltyActive,
+    };
+  }),
+);
 </script>
 
 <style lang="scss" scoped>
@@ -779,31 +1046,34 @@ const activitySummaryItems = computed(() => {
 
 .activity-summary-card {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
   padding: 12px 14px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.08), 0 12px 28px rgba(0,0,0,.05);
-  text-align: left;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.07), 0 12px 28px rgba(0,0,0,.04);
 }
 
-.activity-summary-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(0,0,0,.12);
+.activity-summary-card__name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.activity-summary-card--active {
-  border-color: #027be3;
-  box-shadow: 0 8px 18px rgba(2, 123, 227, 0.2);
+.activity-summary-card__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .activity-summary-card__icon {
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -812,31 +1082,91 @@ const activitySummaryItems = computed(() => {
 }
 
 .activity-summary-card__img {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   display: block;
   object-fit: contain;
 }
 
-.activity-summary-card__body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.activity-summary-card__label {
-  font-size: 12px;
-  color: #6b7280;
-  font-weight: 600;
-  line-height: 1.2;
+.activity-summary-card__values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
 }
 
 .activity-summary-card__value {
-  font-size: 20px;
+  appearance: none;
+  font-family: inherit;
+  border: 1.5px solid #e2e6ea;
+  background: #f2f4f7;
+  border-radius: 12px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.15s ease;
+}
+
+.activity-summary-card__value:hover {
+  background: #e8ecf1;
+  border-color: #bfc6d0;
+  transform: translateY(-1px);
+}
+
+.activity-summary-card__value:active {
+  transform: translateY(0);
+}
+
+.activity-summary-card__value:focus-visible {
+  outline: 2px solid rgba(2, 123, 227, 0.35);
+  outline-offset: 2px;
+}
+
+.activity-summary-card__value-number {
+  font-size: 22px;
   font-weight: 800;
   color: #111827;
   line-height: 1;
+}
+
+.activity-summary-card__value-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8c95a3;
+}
+
+.activity-summary-card__value--active-base {
+  background: #027be3;
+  border-color: #027be3;
+}
+
+.activity-summary-card__value--active-base:hover {
+  background: #0270d0;
+  border-color: #0270d0;
+}
+
+.activity-summary-card__value--active-base .activity-summary-card__value-number,
+.activity-summary-card__value--active-base .activity-summary-card__value-label {
+  color: #ffffff;
+}
+
+.activity-summary-card__value--active-loyalty {
+  background: #26a69a;
+  border-color: #26a69a;
+}
+
+.activity-summary-card__value--active-loyalty:hover {
+  background: #1f9088;
+  border-color: #1f9088;
+}
+
+.activity-summary-card__value--active-loyalty .activity-summary-card__value-number,
+.activity-summary-card__value--active-loyalty .activity-summary-card__value-label {
+  color: #ffffff;
 }
 
 .activity-card {
@@ -865,25 +1195,98 @@ const activitySummaryItems = computed(() => {
   gap: 12px;
 }
 
+.project-chips-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.project-chips-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.project-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.project-chip {
+  appearance: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1.5px solid #dde1e7;
+  background: #f8f9fb;
+  color: #4b5563;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.project-chip:hover {
+  background: #eef1f5;
+  border-color: #b8bec8;
+}
+
+.project-chip--on {
+  background: #027be3;
+  border-color: #027be3;
+  color: #ffffff;
+}
+
+.project-chip--on:hover {
+  background: #0270d0;
+  border-color: #0270d0;
+}
+
+.project-chip--all {
+  flex-shrink: 0;
+  border-style: dashed;
+  color: #6b7280;
+}
+
+.project-chip--all:hover {
+  color: #374151;
+}
+
 .filters-row {
-  display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(320px, 1.6fr);
+  display: flex;
   gap: 12px;
   align-items: center;
 }
 
 .filter-dropdown {
-  width: 100%;
-  min-height: 40px;
-  padding: 6px 10px;
-  border-radius: 10px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+  flex: 1;
+  min-width: 200px;
+  min-height: 44px;
+  padding: 7px 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1.5px solid #dde1e7;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   justify-content: space-between;
   text-transform: none;
   font-weight: 500;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.filter-dropdown:hover {
+  border-color: #b8bec8;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.09);
 }
 
 .filter-dropdown :deep(.q-btn__content) {
@@ -905,13 +1308,14 @@ const activitySummaryItems = computed(() => {
 .filter-dropdown__label {
   font-size: 11px;
   color: #9ca3af;
+  font-weight: 500;
   line-height: 1;
 }
 
 .filter-dropdown__value {
   font-size: 13px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
+  color: #1a2332;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
@@ -971,6 +1375,33 @@ const activitySummaryItems = computed(() => {
   border-radius: 10px;
   text-transform: none;
   font-weight: 600;
+}
+
+.apply-btn--inline {
+  min-width: 140px;
+}
+
+.filters-apply-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: end;
+}
+
+.reset-activity-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  flex-shrink: 0;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.reset-activity-btn:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #ef4444 !important;
 }
 
 .logic-toggle {
@@ -1152,13 +1583,11 @@ const activitySummaryItems = computed(() => {
   padding: 12px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 900px) {
   .filters-row {
     grid-template-columns: 1fr;
   }
-}
 
-@media (max-width: 900px) {
   .summary-controls {
     flex-direction: column;
     align-items: stretch;
