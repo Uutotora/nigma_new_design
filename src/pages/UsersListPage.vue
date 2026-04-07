@@ -23,10 +23,10 @@
             <q-btn
               color="primary"
               outline
-              icon="mdi-format-list-bulleted"
-              label="Поиск по списку"
+              :icon="listSearchActive ? 'mdi-filter-remove-outline' : 'mdi-format-list-bulleted'"
+              :label="listSearchActive ? 'Сбросить поиск' : 'Поиск по списку'"
               class="btn-primary"
-              @click="listSearchOpen = true"
+              @click="handleListSearchButtonClick"
             />
 
             <q-btn
@@ -888,30 +888,44 @@
             <q-icon name="download" color="primary" />
             <span>Экспорт данных</span>
           </div>
-          <q-btn flat round icon="close" @click="exportOpen = false" />
+          <q-btn flat round icon="close" :disable="isExportLoading" @click="exportOpen = false" />
         </div>
         <div class="export-count">
           Строк для экспорта: <strong>{{ filteredRows.length }}</strong>
         </div>
         <div class="export-options">
-          <div class="export-option" @click="handleExport('excel')">
-            <q-icon name="table_chart" color="positive" />
+          <div
+            class="export-option"
+            :class="{ 'export-option--loading': exportLoadingFormat === 'excel', 'export-option--disabled': isExportLoading && exportLoadingFormat !== 'excel' }"
+            @click="handleExport('excel')"
+          >
+            <q-spinner-dots v-if="exportLoadingFormat === 'excel'" color="positive" size="22px" />
+            <q-icon v-else name="table_chart" color="positive" />
             <div>
               <div class="export-option__title">Excel (.xlsx)</div>
-              <div class="export-option__desc">Рекомендуется для анализа данных</div>
+              <div class="export-option__desc">
+                {{ exportLoadingFormat === 'excel' ? 'Формируем файл, подождите 5 секунд...' : 'Рекомендуется для анализа данных' }}
+              </div>
             </div>
           </div>
-          <div class="export-option" @click="handleExport('csv')">
-            <q-icon name="insert_drive_file" color="primary" />
+          <div
+            class="export-option"
+            :class="{ 'export-option--loading': exportLoadingFormat === 'csv', 'export-option--disabled': isExportLoading && exportLoadingFormat !== 'csv' }"
+            @click="handleExport('csv')"
+          >
+            <q-spinner-dots v-if="exportLoadingFormat === 'csv'" color="primary" size="22px" />
+            <q-icon v-else name="insert_drive_file" color="primary" />
             <div>
               <div class="export-option__title">CSV (.csv)</div>
-              <div class="export-option__desc">Универсальный формат</div>
+              <div class="export-option__desc">
+                {{ exportLoadingFormat === 'csv' ? 'Формируем файл, подождите 5 секунд...' : 'Универсальный формат' }}
+              </div>
             </div>
           </div>
         </div>
         <q-separator />
         <div class="export-actions">
-          <q-btn outline color="grey-7" label="Отмена" @click="exportOpen = false" />
+          <q-btn outline color="grey-7" label="Отмена" :disable="isExportLoading" @click="exportOpen = false" />
         </div>
       </q-card>
     </q-dialog>
@@ -937,7 +951,7 @@
                 v-model="listSearchText"
                 type="textarea"
                 rows="12"
-                placeholder="SSO-ID-1\nSSO-ID-2\nSSO-ID-3\n..."
+                :placeholder="'550e8400-e29b-41d4-a716-446655440000\n6ba7b810-9dad-11d1-80b4-00c04fd430c8\n7d444840-9dc0-11d1-b245-5ffdce74fad2\n...'"
                 class="list-search-input"
               />
               <div class="list-search-caption">Каждый SSO ID — с новой строки.</div>
@@ -1013,6 +1027,7 @@ const loadVisibleColumns = (): string[] => {
 const filtersOpen = ref(false);
 const searchQuery = ref('');
 const appliedSearch = ref('');
+const appliedListSsoIds = ref<string[]>([]);
 const filters = ref<FiltersState>(getDefaultFilters());
 const appliedFilters = ref<FiltersState>(getDefaultFilters());
 const exportOpen = ref(false);
@@ -1022,8 +1037,17 @@ const listSearchFile = ref<File | null>(null);
 const listSearchError = ref('');
 const visibleColumns = ref<string[]>(loadVisibleColumns());
 const pagination = ref({ page: 1, rowsPerPage: 50 });
+const exportLoadingFormat = ref<'csv' | 'excel' | null>(null);
+const listSearchActive = computed(() => appliedListSsoIds.value.length > 0);
+const isExportLoading = computed(() => exportLoadingFormat.value !== null);
 
-const filteredRows = computed(() => filterUsers(ALL_USER_DATA, appliedFilters.value, appliedSearch.value));
+const filteredRows = computed(() => {
+  const baseRows = filterUsers(ALL_USER_DATA, appliedFilters.value, appliedSearch.value);
+  if (appliedListSsoIds.value.length === 0) return baseRows;
+
+  const selectedSsoIds = new Set(appliedListSsoIds.value.map((id) => id.toLowerCase()));
+  return baseRows.filter((user) => selectedSsoIds.has(user.ssoId.toLowerCase()));
+});
 const projectsMatchDisabled = computed(() => filters.value.projects.length < 2);
 
 type TreeFilterState = {
@@ -1275,6 +1299,7 @@ const groupedColumns = computed(() => {
 const hiddenCount = computed(() => ALL_COLUMN_FIELDS.length - visibleColumns.value.length);
 
 const applySearch = () => {
+  appliedListSsoIds.value = [];
   appliedSearch.value = searchQuery.value.trim();
 };
 
@@ -1310,14 +1335,26 @@ const resetColumns = () => {
   visibleColumns.value = ['ssoId'];
 };
 
-const handleExport = (format: 'csv' | 'excel') => {
-  const filename = getExportFilename('users');
-  if (format === 'csv') {
-    exportToCSV(filteredRows.value, visibleColumns.value, filename);
-  } else {
-    exportToExcel(filteredRows.value, visibleColumns.value, filename);
+const waitMs = (ms: number) => new Promise<void>((resolve) => {
+  setTimeout(resolve, ms);
+});
+
+const handleExport = async (format: 'csv' | 'excel') => {
+  if (isExportLoading.value) return;
+  exportLoadingFormat.value = format;
+  try {
+    await waitMs(5000);
+
+    const filename = getExportFilename('users');
+    if (format === 'csv') {
+      exportToCSV(filteredRows.value, visibleColumns.value, filename);
+    } else {
+      exportToExcel(filteredRows.value, visibleColumns.value, filename);
+    }
+    exportOpen.value = false;
+  } finally {
+    exportLoadingFormat.value = null;
   }
-  exportOpen.value = false;
 };
 
 const closeListSearch = () => {
@@ -1325,6 +1362,19 @@ const closeListSearch = () => {
   listSearchText.value = '';
   listSearchFile.value = null;
   listSearchError.value = '';
+};
+
+const resetListSearch = () => {
+  appliedListSsoIds.value = [];
+  closeListSearch();
+};
+
+const handleListSearchButtonClick = () => {
+  if (listSearchActive.value) {
+    resetListSearch();
+    return;
+  }
+  listSearchOpen.value = true;
 };
 
 const handleFileUpload = (event: Event) => {
@@ -1342,19 +1392,30 @@ const handleFileUpload = (event: Event) => {
   listSearchError.value = '';
 };
 
-const parseListText = (): string[] =>
-  listSearchText.value
+const normalizeSsoIdValue = (value: string): string =>
+  value
+    .replace(/\uFEFF/g, '')
+    .replace(/[\u200B-\u200D\u2060]/g, '')
     .trim()
-    .split('\n')
-    .map((line) => line.trim())
+    .replace(/^[,;]+|[,;]+$/g, '')
+    .replace(/\s+/g, '');
+
+const parseListText = (): string[] => {
+  const normalized = listSearchText.value
+    .split(/\r?\n/)
+    .map((line) => normalizeSsoIdValue(line))
     .filter((line) => line.length > 0);
+
+  return Array.from(new Set(normalized));
+};
 
 const applyListSearch = () => {
   listSearchError.value = '';
   const data = parseListText();
   if (data.length > 0) {
-    searchQuery.value = data[0];
-    appliedSearch.value = data[0];
+    appliedListSsoIds.value = data;
+    searchQuery.value = '';
+    appliedSearch.value = '';
     closeListSearch();
     return;
   }
@@ -1364,9 +1425,12 @@ const applyListSearch = () => {
     return;
   }
 
-  const mockData = ['user1', 'user2', 'user3'];
-  searchQuery.value = mockData[0];
-  appliedSearch.value = mockData[0];
+  const mockData = ['user1', 'user2', 'user3']
+    .map((id) => normalizeSsoIdValue(id))
+    .filter((id) => id.length > 0);
+  appliedListSsoIds.value = Array.from(new Set(mockData));
+  searchQuery.value = '';
+  appliedSearch.value = '';
   closeListSearch();
 };
 
@@ -2016,11 +2080,35 @@ const highlightParts = (text: string, query: string) => {
   padding: 12px;
   cursor: pointer;
   transition: 0.2s;
+  position: relative;
+  overflow: hidden;
 }
 
 .export-option:hover {
   border-color: #2563eb;
   background: rgba(37, 99, 235, 0.04);
+}
+
+.export-option--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.export-option--loading {
+  border-color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.export-option--loading::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, #2563eb 45%, #22c55e 100%);
+  animation: export-progress 1.2s linear infinite;
 }
 
 .export-option__title {
@@ -2037,6 +2125,12 @@ const highlightParts = (text: string, query: string) => {
   display: flex;
   justify-content: flex-end;
   padding-top: 12px;
+}
+
+@keyframes export-progress {
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .list-search-modal {
@@ -2121,6 +2215,13 @@ const highlightParts = (text: string, query: string) => {
   max-height: unset !important;
   overflow: auto;
   resize: none;
+  padding: 8px 12px 10px;
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+
+.list-search-input :deep(textarea::placeholder) {
+  white-space: pre-line;
 }
 
 .list-search-caption {
