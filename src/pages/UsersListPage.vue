@@ -1041,13 +1041,12 @@ const exportLoadingFormat = ref<'csv' | 'excel' | null>(null);
 const listSearchActive = computed(() => appliedListSsoIds.value.length > 0);
 const isExportLoading = computed(() => exportLoadingFormat.value !== null);
 
-const filteredRows = computed(() => {
-  const baseRows = filterUsers(ALL_USER_DATA, appliedFilters.value, appliedSearch.value);
-  if (appliedListSsoIds.value.length === 0) return baseRows;
-
-  const selectedSsoIds = new Set(appliedListSsoIds.value.map((id) => id.toLowerCase()));
-  return baseRows.filter((user) => selectedSsoIds.has(user.ssoId.toLowerCase()));
-});
+const filteredRows = computed(() => filterUsers(
+  ALL_USER_DATA,
+  appliedFilters.value,
+  appliedSearch.value,
+  { ssoIdList: appliedListSsoIds.value },
+));
 const projectsMatchDisabled = computed(() => filters.value.projects.length < 2);
 
 type TreeFilterState = {
@@ -1953,10 +1952,20 @@ const highlightParts = (text: string, query: string) => {
   border-radius: 8px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
+  overflow: hidden;
 }
 
 .filters-panel :deep(.q-field__control):before {
   border: none;
+}
+
+.filters-panel :deep(.q-field__control):after {
+  border: none;
+}
+
+.filters-panel :deep(.q-field--focused .q-field__control) {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
 }
 
 .filters-footer {

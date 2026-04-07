@@ -258,9 +258,30 @@ const matchProjects = (userProjects: string[], selected: string[], mode: 'and' |
   return selected.some((p) => userProjects.includes(p));
 };
 
-export const applyFilters = (data: UserData[], filters: FiltersState, search: string): UserData[] =>
-  data.filter((user) => {
-    if (search && !user.ssoId.toLowerCase().includes(search.toLowerCase())) return false;
+export interface ApplyFiltersOptions {
+  ssoIdList?: string[];
+}
+
+export const applyFilters = (
+  data: UserData[],
+  filters: FiltersState,
+  search: string,
+  options: ApplyFiltersOptions = {},
+): UserData[] => {
+  const normalizedSearch = search.trim().toLowerCase();
+  const normalizedSsoList = (options.ssoIdList ?? [])
+    .map((id) => id.trim().toLowerCase())
+    .filter((id) => id.length > 0);
+  const ssoIdSet = normalizedSsoList.length > 0 ? new Set(normalizedSsoList) : null;
+
+  return data.filter((user) => {
+    const normalizedUserSsoId = user.ssoId.toLowerCase();
+
+    // 1) List search pipeline stage: if list is provided, keep only exact matches from it.
+    if (ssoIdSet && !ssoIdSet.has(normalizedUserSsoId)) return false;
+
+    // 2) Generic search pipeline stage.
+    if (normalizedSearch && !normalizedUserSsoId.includes(normalizedSearch)) return false;
 
     if (!matchProjects(user.projects, filters.projects, filters.projectsMatch)) return false;
     if (!matchRange(user.projectCount, filters.projectCount)) return false;
@@ -303,6 +324,7 @@ export const applyFilters = (data: UserData[], filters: FiltersState, search: st
 
     return true;
   });
+};
 
 export interface ColumnDef {
   field: string;
