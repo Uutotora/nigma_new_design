@@ -1766,8 +1766,13 @@ const highlightParts = (text: string, query: string) => {
 
 .filter-range {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  align-items: start;
+}
+
+.filter-sub {
+  min-width: 0;
 }
 
 .filter-sub__label {
@@ -1809,10 +1814,18 @@ const highlightParts = (text: string, query: string) => {
   overflow: hidden;
 }
 
-.filters-panel :deep(.q-field__control):before {
-  border: none;
+.filters-panel :deep(.q-field) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
+.filters-panel :deep(.q-field__native),
+.filters-panel :deep(.q-field__input) {
+  min-width: 0;
+}
+
+.filters-panel :deep(.q-field__control):before,
 .filters-panel :deep(.q-field__control):after {
   border: none;
 }
