@@ -16,7 +16,12 @@ npm run build
 echo "Ensuring remote directory exists: ${REMOTE_HOST}:${REMOTE_PATH}"
 ssh "$REMOTE_HOST" "mkdir -p '$REMOTE_PATH'"
 
-echo "Uploading dist/spa contents to ${REMOTE_HOST}:${REMOTE_PATH}"
-rsync -av --delete dist/spa/ "${REMOTE_HOST}:${REMOTE_PATH}/"
+echo "Uploading dist/spa contents to ${REMOTE_HOST}:${REMOTE_PATH} without rsync"
+tar -C dist/spa -czf - . | ssh "$REMOTE_HOST" "\
+  set -euo pipefail; \
+  mkdir -p '$REMOTE_PATH'; \
+  find '$REMOTE_PATH' -mindepth 1 -maxdepth 1 -exec rm -rf {} +; \
+  tar -xzf - -C '$REMOTE_PATH'\
+"
 
 echo "Deployment finished. index.html is available at ${REMOTE_PATH}/index.html"

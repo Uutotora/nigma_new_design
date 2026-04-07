@@ -1521,10 +1521,20 @@ const highlightParts = (text: string, query: string) => {
   min-height: 34px;
   background: #fff;
   border: 1px solid #cbd5e1;
+  overflow: hidden;
 }
 
 .search-input :deep(.q-field__control):before {
   border: none;
+}
+
+.search-input :deep(.q-field__control):after {
+  border: none;
+}
+
+.search-input :deep(.q-field--focused .q-field__control) {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
 }
 
 .search-input :deep(.q-field__native) {
@@ -2208,6 +2218,17 @@ const highlightParts = (text: string, query: string) => {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   height: 100%;
+  overflow: hidden;
+}
+
+.list-search-input :deep(.q-field__control):before,
+.list-search-input :deep(.q-field__control):after {
+  border: none;
+}
+
+.list-search-input :deep(.q-field--focused .q-field__control) {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
 }
 
 .list-search-input :deep(textarea) {
