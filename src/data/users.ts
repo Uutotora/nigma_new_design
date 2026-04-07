@@ -1,4 +1,4 @@
-export interface RangeFilter {
+﻿export interface RangeFilter {
   from: string;
   to: string;
 }
@@ -88,7 +88,7 @@ export const ALL_PROJECTS = [
 ];
 
 export const ACCOUNT_TYPES = ['Упрощенная', 'Стандартная', 'Расширенная', 'Базовая'];
-export const GENDERS = ['Мужской', 'Женский', 'Не указан'];
+export const GENDERS = ['Мужской', 'Женский', 'Не указано'];
 export const MARITAL_STATUSES = ['Женат/Замужем', 'Холост/Не замужем', 'Не указано'];
 export const DISTRICTS = ['ЦАО', 'САО', 'СВАО', 'ВАО', 'ЮВАО', 'ЮАО', 'ЮЗАО', 'ЗАО', 'СЗАО', 'Зеленоград'];
 export const GROUPS = ['Низкая', 'Умеренная', 'Высокая', 'Супер'];
@@ -330,88 +330,41 @@ export interface ColumnDef {
   field: string;
   label: string;
   group: string;
+  DisplayLabel: string;
+  isVisible: boolean;
+  format?: (value: unknown) => string;
 }
 
-export const COLUMN_DEFS: ColumnDef[] = [
-  { field: 'ssoId', label: 'SSO ID', group: 'Основные' },
-  { field: 'projectCount', label: 'Кол-во проектов', group: 'Основные' },
-  { field: 'accountType', label: 'Тип учетной записи', group: 'Основные' },
-  { field: 'confirmedAddresses', label: 'Подтвержденные адреса', group: 'Основные' },
-  { field: 'activityCount', label: 'Кол-во активностей', group: 'Активность' },
-  { field: 'firstActivityDate', label: 'Дата первой активности', group: 'Активность' },
-  { field: 'lastActivityDate', label: 'Дата последней активности', group: 'Активность' },
-  { field: 'cityPointsEarned', label: 'Заработано ГБ', group: 'Городские баллы' },
-  { field: 'cityPointsSpent', label: 'Потрачено ГБ', group: 'Городские баллы' },
-  { field: 'cityPointsBalance', label: 'Остаток ГБ', group: 'Городские баллы' },
-  { field: 'prizePointsEarned', label: 'Заработано ПБ', group: 'Призовые баллы' },
-  { field: 'prizePointsSpent', label: 'Потрачено ПБ', group: 'Призовые баллы' },
-  { field: 'prizePointsBalance', label: 'Остаток ПБ', group: 'Призовые баллы' },
-  { field: 'kidsPointsEarned', label: 'Заработано ДБ', group: 'Детские баллы' },
-  { field: 'kidsPointsSpent', label: 'Потрачено ДБ', group: 'Детские баллы' },
-  { field: 'kidsPointsBalance', label: 'Остаток ДБ', group: 'Детские баллы' },
-  { field: 'gender', label: 'Пол', group: 'Данные пользователя' },
-  { field: 'birthDate', label: 'Дата рождения', group: 'Данные пользователя' },
-  { field: 'maritalStatus', label: 'Семейное положение', group: 'Данные пользователя' },
-  { field: 'childrenCount', label: 'Кол-во детей', group: 'Данные пользователя' },
-  { field: 'district', label: 'Округ', group: 'Данные пользователя' },
-  { field: 'area', label: 'Район', group: 'Данные пользователя' },
-  { field: 'isBlocked', label: 'Заблокирован', group: 'Данные пользователя' },
-  { field: 'activityGroup', label: 'Группа активности', group: 'Группы' },
-  { field: 'loyaltyGroup', label: 'Группа лояльности', group: 'Группы' },
-  { field: 'usefulnessGroup', label: 'Группа полезности', group: 'Группы' },
-  { field: 'interestGroup', label: 'Группа заинтересованности', group: 'Группы' },
-  { field: 'messageGroup', label: 'Группа сообщений', group: 'Группы' },
+const BASE_COLUMN_DEFS: ColumnDef[] = [
+  { field: 'ssoId', label: 'SSO ID', group: 'Основные', DisplayLabel: 'SSO ID', isVisible: true },
+  { field: 'projectCount', label: 'Кол-во проектов', group: 'Основные', DisplayLabel: 'Кол-во проектов', isVisible: true },
+  { field: 'accountType', label: 'Тип учетной записи', group: 'Основные', DisplayLabel: 'Тип учетной записи', isVisible: true },
+  { field: 'confirmedAddresses', label: 'Подтвержденные адреса', group: 'Основные', DisplayLabel: 'Подтв. адреса', isVisible: true },
+  { field: 'activityCount', label: 'Кол-во активностей', group: 'Активность', DisplayLabel: 'Кол-во активностей', isVisible: true },
+  { field: 'firstActivityDate', label: 'Дата первой активности', group: 'Активность', DisplayLabel: 'Дата первой акт.', isVisible: true, format: (value) => formatDate(value as Date) },
+  { field: 'lastActivityDate', label: 'Дата последней активности', group: 'Активность', DisplayLabel: 'Дата последней акт.', isVisible: true, format: (value) => formatDate(value as Date) },
+  { field: 'cityPointsEarned', label: 'Заработано ГБ', group: 'Городские баллы', DisplayLabel: 'Заработано ГБ', isVisible: true, format: (value) => formatNumber(value as number) },
+  { field: 'cityPointsSpent', label: 'Потрачено ГБ', group: 'Городские баллы', DisplayLabel: 'Потрачено ГБ', isVisible: true, format: (value) => formatNumber(value as number) },
+  { field: 'cityPointsBalance', label: 'Остаток ГБ', group: 'Городские баллы', DisplayLabel: 'Остаток ГБ', isVisible: true, format: (value) => formatNumber(value as number) },
+  { field: 'prizePointsEarned', label: 'Заработано ПБ', group: 'Призовые баллы', DisplayLabel: 'Заработано ПБ', isVisible: true, format: (value) => formatNumber(value as number) },
+  { field: 'prizePointsSpent', label: 'Потрачено ПБ', group: 'Призовые баллы', DisplayLabel: 'Потрачено ПБ', isVisible: true, format: (value) => formatNumber(value as number) },
+  { field: 'prizePointsBalance', label: 'Остаток ПБ', group: 'Призовые баллы', DisplayLabel: 'Остаток ПБ', isVisible: true, format: (value) => formatNumber(value as number) },
+  { field: 'kidsPointsEarned', label: 'Заработано ДБ', group: 'Детские баллы', DisplayLabel: 'Заработано ДБ', isVisible: true, format: (value) => formatNumber(value as number) },
+  { field: 'kidsPointsSpent', label: 'Потрачено ДБ', group: 'Детские баллы', DisplayLabel: 'Потрачено ДБ', isVisible: true, format: (value) => formatNumber(value as number) },
+  { field: 'kidsPointsBalance', label: 'Остаток ДБ', group: 'Детские баллы', DisplayLabel: 'Остаток ДБ', isVisible: true, format: (value) => formatNumber(value as number) },
+  { field: 'gender', label: 'Пол', group: 'Данные пользователя', DisplayLabel: 'Пол', isVisible: false },
+  { field: 'birthDate', label: 'Дата рождения', group: 'Данные пользователя', DisplayLabel: 'Дата рождения', isVisible: false, format: (value) => formatDate(value as Date) },
+  { field: 'maritalStatus', label: 'Семейное положение', group: 'Данные пользователя', DisplayLabel: 'Семейное положение', isVisible: false },
+  { field: 'childrenCount', label: 'Кол-во детей', group: 'Данные пользователя', DisplayLabel: 'Кол-во детей', isVisible: false },
+  { field: 'district', label: 'Округ', group: 'Данные пользователя', DisplayLabel: 'Округ', isVisible: false },
+  { field: 'area', label: 'Район', group: 'Данные пользователя', DisplayLabel: 'Район', isVisible: false },
+  { field: 'isBlocked', label: 'Заблокирован', group: 'Данные пользователя', DisplayLabel: 'Заблокирован', isVisible: false },
+  { field: 'activityGroup', label: 'Группа активности', group: 'Группы', DisplayLabel: 'Группа активности', isVisible: false },
+  { field: 'loyaltyGroup', label: 'Группа лояльности', group: 'Группы', DisplayLabel: 'Группа лояльности', isVisible: false },
+  { field: 'usefulnessGroup', label: 'Группа полезности', group: 'Группы', DisplayLabel: 'Группа полезности', isVisible: false },
+  { field: 'interestGroup', label: 'Группа заинтересованности', group: 'Группы', DisplayLabel: 'Группа заинтер.', isVisible: false },
+  { field: 'messageGroup', label: 'Группа сообщений', group: 'Группы', DisplayLabel: 'Группа сообщений', isVisible: false },
 ];
 
-export const ALL_COLUMN_FIELDS = COLUMN_DEFS.map((c) => c.field);
+export const COLUMN_DEFS: ColumnDef[] = BASE_COLUMN_DEFS;
 
-export const DEFAULT_VISIBLE_COLUMNS = [
-  'ssoId',
-  'projectCount',
-  'accountType',
-  'confirmedAddresses',
-  'activityCount',
-  'firstActivityDate',
-  'lastActivityDate',
-  'cityPointsEarned',
-  'cityPointsSpent',
-  'cityPointsBalance',
-  'prizePointsEarned',
-  'prizePointsSpent',
-  'prizePointsBalance',
-  'kidsPointsEarned',
-  'kidsPointsSpent',
-  'kidsPointsBalance',
-];
-
-export const COLUMN_HEADERS: Record<string, string> = {
-  ssoId: 'SSO ID',
-  projectCount: 'Количество проектов',
-  accountType: 'Тип учетной записи',
-  confirmedAddresses: 'Подтвержденные адреса',
-  activityCount: 'Количество активностей',
-  firstActivityDate: 'Дата первой активности',
-  lastActivityDate: 'Дата последней активности',
-  cityPointsEarned: 'Заработано ГБ',
-  cityPointsSpent: 'Потрачено ГБ',
-  cityPointsBalance: 'Остаток ГБ',
-  prizePointsEarned: 'Заработано ПБ',
-  prizePointsSpent: 'Потрачено ПБ',
-  prizePointsBalance: 'Остаток ПБ',
-  kidsPointsEarned: 'Заработано ДБ',
-  kidsPointsSpent: 'Потрачено ДБ',
-  kidsPointsBalance: 'Остаток ДБ',
-  gender: 'Пол',
-  birthDate: 'Дата рождения',
-  maritalStatus: 'Семейное положение',
-  childrenCount: 'Количество детей',
-  district: 'Округ',
-  area: 'Район',
-  address: 'Адрес',
-  isBlocked: 'Заблокирован',
-  activityGroup: 'Группа активности',
-  loyaltyGroup: 'Группа лояльности',
-  usefulnessGroup: 'Группа полезности',
-  interestGroup: 'Группа заинтересованности',
-  messageGroup: 'Группа сообщений',
-};

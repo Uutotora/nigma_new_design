@@ -1,5 +1,4 @@
-import type { UserData } from 'src/data/users';
-import { COLUMN_HEADERS } from 'src/data/users';
+import type { UserData, ColumnDef } from 'src/data/users';
 
 const formatCellValue = (value: unknown): string => {
   if (value instanceof Date) return value.toLocaleDateString('ru-RU');
@@ -7,9 +6,13 @@ const formatCellValue = (value: unknown): string => {
   return String(value);
 };
 
-const prepareExportData = (data: UserData[], columns: string[]) => {
-  const cols = columns.length > 0 ? columns : Object.keys(COLUMN_HEADERS);
-  const headers = cols.map((c) => COLUMN_HEADERS[c] || c);
+const prepareExportData = (data: UserData[], columns: ColumnDef[]) => {
+  const visibleColumns = columns.filter((column) => column.isVisible);
+  const cols = visibleColumns.length > 0
+    ? visibleColumns.map((column) => column.field)
+    : columns.map((column) => column.field);
+  const labelByField = new Map(columns.map((col) => [col.field, col.label]));
+  const headers = cols.map((c) => labelByField.get(c) || c);
   const rows = data.map((user) => cols.map((c) => formatCellValue(user[c as keyof UserData])));
   return { headers, rows };
 };
@@ -27,7 +30,7 @@ const downloadFile = (content: string, filename: string, type: string) => {
   URL.revokeObjectURL(url);
 };
 
-export const exportToCSV = (data: UserData[], columns: string[], filename: string) => {
+export const exportToCSV = (data: UserData[], columns: ColumnDef[], filename: string) => {
   const { headers, rows } = prepareExportData(data, columns);
   const escape = (cell: string) =>
     cell.includes(',') || cell.includes('"') || cell.includes('\n')
@@ -37,7 +40,7 @@ export const exportToCSV = (data: UserData[], columns: string[], filename: strin
   downloadFile(csv, `${filename}.csv`, 'text/csv;charset=utf-8;');
 };
 
-export const exportToExcel = (data: UserData[], columns: string[], filename: string) => {
+export const exportToExcel = (data: UserData[], columns: ColumnDef[], filename: string) => {
   const { headers, rows } = prepareExportData(data, columns);
   const tsv = [headers.join('\t'), ...rows.map((r) => r.join('\t'))].join('\n');
   downloadFile(tsv, `${filename}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

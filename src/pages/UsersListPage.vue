@@ -66,7 +66,7 @@
                         <q-checkbox
                           v-for="col in group.columns"
                           :key="col.field"
-                          :model-value="visibleColumns.includes(col.field)"
+                          :model-value="col.isVisible"
                           :disable="col.field === 'ssoId'"
                           :label="col.label"
                           dense
@@ -100,7 +100,7 @@
               flat
               dense
               separator="horizontal"
-              :visible-columns="visibleColumns"
+              :visible-columns="visibleColumnFields"
               :rows-per-page-options="[10, 25, 50, 100]"
               v-model:pagination="pagination"
               rows-per-page-label="строк на странице"
@@ -990,12 +990,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, type Ref, type ComputedRef } from 'vue';
+import { ref, computed, type Ref, type ComputedRef } from 'vue';
 import {
   ALL_USER_DATA,
   applyFilters as filterUsers,
-  formatDate,
-  formatNumber,
   getDefaultFilters,
   ALL_PROJECTS,
   ACCOUNT_TYPES,
@@ -1006,36 +1004,26 @@ import {
   BLOCKED_OPTIONS,
   TAG_OPTIONS,
   COLUMN_DEFS,
-  ALL_COLUMN_FIELDS,
-  DEFAULT_VISIBLE_COLUMNS,
 } from 'src/data/users';
 import type { FiltersState } from 'src/data/users';
 import { exportToCSV, exportToExcel, getExportFilename } from 'src/utils/exportUsers';
-
-const STORAGE_KEY = 'users_visible_columns';
-
-const loadVisibleColumns = (): string[] => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return JSON.parse(saved) as string[];
-  } catch {
-    // ignore
-  }
-  return DEFAULT_VISIBLE_COLUMNS;
-};
 
 const filtersOpen = ref(false);
 const searchQuery = ref('');
 const appliedSearch = ref('');
 const appliedListSsoIds = ref<string[]>([]);
-const filters = ref<FiltersState>(getDefaultFilters());
-const appliedFilters = ref<FiltersState>(getDefaultFilters());
+const cloneFiltersState = (value: FiltersState): FiltersState =>
+  JSON.parse(JSON.stringify(value)) as FiltersState;
+
+const defaultFiltersState = getDefaultFilters();
+const filters = ref<FiltersState>(cloneFiltersState(defaultFiltersState));
+const appliedFilters = ref<FiltersState>(cloneFiltersState(defaultFiltersState));
 const exportOpen = ref(false);
 const listSearchOpen = ref(false);
 const listSearchText = ref('');
 const listSearchFile = ref<File | null>(null);
 const listSearchError = ref('');
-const visibleColumns = ref<string[]>(loadVisibleColumns());
+const columnDefs = ref(COLUMN_DEFS.map((column) => ({ ...column })));
 const pagination = ref({ page: 1, rowsPerPage: 50 });
 const exportLoadingFormat = ref<'csv' | 'excel' | null>(null);
 const listSearchActive = computed(() => appliedListSsoIds.value.length > 0);
@@ -1054,6 +1042,7 @@ type TreeFilterState = {
   ticked: Ref<string[]>;
   expanded: Ref<string[]>;
   updateTicked: (next: string[]) => void;
+  syncFromFilters: (values: string[]) => void;
   display: ComputedRef<string>;
 };
 
@@ -1087,12 +1076,7 @@ const createTreeFilter = (
       ? [rootId, ...selectedLeafs]
       : selectedLeafs;
   };
-
-  watch(
-    () => (filters.value[key] as string[]),
-    (values) => syncFromFilters(values ?? []),
-    { immediate: true, deep: true },
-  );
+  syncFromFilters((filters.value[key] as string[]) ?? []);
 
   const updateTicked = (next: string[]) => {
     const leafSet = new Set(next.filter((id) => id !== rootId));
@@ -1130,6 +1114,7 @@ const createTreeFilter = (
     ticked,
     expanded,
     updateTicked,
+    syncFromFilters,
     display,
   };
 };
@@ -1145,6 +1130,19 @@ const loyaltyGroupTree = createTreeFilter('loyaltyGroup', GROUPS);
 const usefulnessGroupTree = createTreeFilter('usefulnessGroup', GROUPS);
 const interestGroupTree = createTreeFilter('interestGroup', GROUPS);
 const messageGroupTree = createTreeFilter('messageGroup', MESSAGE_GROUPS);
+const treeFiltersByKey: Partial<Record<keyof FiltersState, TreeFilterState>> = {
+  projects: projectsTree,
+  gender: genderTree,
+  maritalStatus: maritalStatusTree,
+  accountType: accountTypeTree,
+  blocked: blockedTree,
+  tags: tagsTree,
+  activityGroup: activityGroupTree,
+  loyaltyGroup: loyaltyGroupTree,
+  usefulnessGroup: usefulnessGroupTree,
+  interestGroup: interestGroupTree,
+  messageGroup: messageGroupTree,
+};
 
 const toggleTreeNode = (state: TreeFilterState, nodeId: string) => {
   const next = new Set(state.ticked.value);
@@ -1159,143 +1157,33 @@ const toggleTreeNode = (state: TreeFilterState, nodeId: string) => {
 const isTreeTicked = (state: TreeFilterState, nodeId: string) =>
   state.ticked.value.includes(nodeId);
 
-watch(visibleColumns, (val) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(val));
-});
+const columns = computed(() => columnDefs.value.map((col) => ({
+  name: col.field,
+  field: col.field,
+  label: col.DisplayLabel,
+  align: 'left',
+  sortable: true,
+  format: col.format,
+})));
 
-watch(projectsMatchDisabled, (disabled) => {
-  if (disabled) filters.value.projectsMatch = 'or';
-});
-
-const pointsGroupClass = (group: 'city' | 'prize' | 'kids', edge: 'start' | 'mid' | 'end') =>
-  `points-group points-group--${group} points-group--${edge}`;
-
-const columns = computed(() => [
-  { name: 'ssoId', label: 'SSO ID', field: 'ssoId', align: 'left', sortable: true },
-  { name: 'projectCount', label: 'Кол-во проектов', field: 'projectCount', align: 'left', sortable: true },
-  { name: 'accountType', label: 'Тип учетной записи', field: 'accountType', align: 'left', sortable: true },
-  { name: 'confirmedAddresses', label: 'Подтв. адреса', field: 'confirmedAddresses', align: 'left', sortable: true },
-  { name: 'activityCount', label: 'Кол-во активностей', field: 'activityCount', align: 'left', sortable: true },
-  { name: 'firstActivityDate', label: 'Дата первой акт.', field: 'firstActivityDate', align: 'left', sortable: true, format: (v: Date) => formatDate(v) },
-  { name: 'lastActivityDate', label: 'Дата последней акт.', field: 'lastActivityDate', align: 'left', sortable: true, format: (v: Date) => formatDate(v) },
-  {
-    name: 'cityPointsEarned',
-    label: 'Заработано ГБ',
-    field: 'cityPointsEarned',
-    align: 'left',
-    sortable: true,
-    format: (v: number) => formatNumber(v),
-    classes: pointsGroupClass('city', 'start'),
-    headerClasses: pointsGroupClass('city', 'start'),
-  },
-  {
-    name: 'cityPointsSpent',
-    label: 'Потрачено ГБ',
-    field: 'cityPointsSpent',
-    align: 'left',
-    sortable: true,
-    format: (v: number) => formatNumber(v),
-    classes: pointsGroupClass('city', 'mid'),
-    headerClasses: pointsGroupClass('city', 'mid'),
-  },
-  {
-    name: 'cityPointsBalance',
-    label: 'Остаток ГБ',
-    field: 'cityPointsBalance',
-    align: 'left',
-    sortable: true,
-    format: (v: number) => formatNumber(v),
-    classes: pointsGroupClass('city', 'end'),
-    headerClasses: pointsGroupClass('city', 'end'),
-  },
-  {
-    name: 'prizePointsEarned',
-    label: 'Заработано ПБ',
-    field: 'prizePointsEarned',
-    align: 'left',
-    sortable: true,
-    format: (v: number) => formatNumber(v),
-    classes: pointsGroupClass('prize', 'start'),
-    headerClasses: pointsGroupClass('prize', 'start'),
-  },
-  {
-    name: 'prizePointsSpent',
-    label: 'Потрачено ПБ',
-    field: 'prizePointsSpent',
-    align: 'left',
-    sortable: true,
-    format: (v: number) => formatNumber(v),
-    classes: pointsGroupClass('prize', 'mid'),
-    headerClasses: pointsGroupClass('prize', 'mid'),
-  },
-  {
-    name: 'prizePointsBalance',
-    label: 'Остаток ПБ',
-    field: 'prizePointsBalance',
-    align: 'left',
-    sortable: true,
-    format: (v: number) => formatNumber(v),
-    classes: pointsGroupClass('prize', 'end'),
-    headerClasses: pointsGroupClass('prize', 'end'),
-  },
-  {
-    name: 'kidsPointsEarned',
-    label: 'Заработано ДБ',
-    field: 'kidsPointsEarned',
-    align: 'left',
-    sortable: true,
-    format: (v: number) => formatNumber(v),
-    classes: pointsGroupClass('kids', 'start'),
-    headerClasses: pointsGroupClass('kids', 'start'),
-  },
-  {
-    name: 'kidsPointsSpent',
-    label: 'Потрачено ДБ',
-    field: 'kidsPointsSpent',
-    align: 'left',
-    sortable: true,
-    format: (v: number) => formatNumber(v),
-    classes: pointsGroupClass('kids', 'mid'),
-    headerClasses: pointsGroupClass('kids', 'mid'),
-  },
-  {
-    name: 'kidsPointsBalance',
-    label: 'Остаток ДБ',
-    field: 'kidsPointsBalance',
-    align: 'left',
-    sortable: true,
-    format: (v: number) => formatNumber(v),
-    classes: pointsGroupClass('kids', 'end'),
-    headerClasses: pointsGroupClass('kids', 'end'),
-  },
-  { name: 'gender', label: 'Пол', field: 'gender', align: 'left', sortable: true },
-  { name: 'birthDate', label: 'Дата рождения', field: 'birthDate', align: 'left', sortable: true, format: (v: Date) => formatDate(v) },
-  { name: 'maritalStatus', label: 'Семейное положение', field: 'maritalStatus', align: 'left', sortable: true },
-  { name: 'childrenCount', label: 'Кол-во детей', field: 'childrenCount', align: 'left', sortable: true },
-  { name: 'district', label: 'Округ', field: 'district', align: 'left', sortable: true },
-  { name: 'area', label: 'Район', field: 'area', align: 'left', sortable: true },
-  { name: 'isBlocked', label: 'Заблокирован', field: 'isBlocked', align: 'left', sortable: true },
-  { name: 'activityGroup', label: 'Группа активности', field: 'activityGroup', align: 'left', sortable: true },
-  { name: 'loyaltyGroup', label: 'Группа лояльности', field: 'loyaltyGroup', align: 'left', sortable: true },
-  { name: 'usefulnessGroup', label: 'Группа полезности', field: 'usefulnessGroup', align: 'left', sortable: true },
-  { name: 'interestGroup', label: 'Группа заинтер.', field: 'interestGroup', align: 'left', sortable: true },
-  { name: 'messageGroup', label: 'Группа сообщений', field: 'messageGroup', align: 'left', sortable: true },
-]);
+const visibleColumnFields = computed(() =>
+  columnDefs.value.filter((col) => col.isVisible).map((col) => col.field),
+);
 
 const groupedColumns = computed(() => {
-  const groups: { name: string; columns: { field: string; label: string }[] }[] = [];
-  COLUMN_DEFS.forEach((col) => {
+  const groups: { name: string; columns: { field: string; label: string; isVisible: boolean }[] }[] = [];
+  columnDefs.value.forEach((col) => {
     let group = groups.find((g) => g.name === col.group);
     if (!group) {
       group = { name: col.group, columns: [] };
       groups.push(group);
     }
-    group.columns.push({ field: col.field, label: col.label });
+    group.columns.push({ field: col.field, label: col.label, isVisible: col.isVisible });
   });
   return groups;
 });
 
-const hiddenCount = computed(() => ALL_COLUMN_FIELDS.length - visibleColumns.value.length);
+const hiddenCount = computed(() => columnDefs.value.filter((col) => !col.isVisible).length);
 
 const applySearch = () => {
   appliedListSsoIds.value = [];
@@ -1303,7 +1191,10 @@ const applySearch = () => {
 };
 
 const applyFiltersAction = () => {
-  appliedFilters.value = { ...filters.value };
+  if (projectsMatchDisabled.value) {
+    filters.value.projectsMatch = 'or';
+  }
+  appliedFilters.value = cloneFiltersState(filters.value);
 };
 
 const setProjectsMatch = (mode: 'and' | 'or') => {
@@ -1312,26 +1203,30 @@ const setProjectsMatch = (mode: 'and' | 'or') => {
 };
 
 const resetFilters = () => {
-  const defaults = getDefaultFilters();
-  filters.value = { ...defaults };
-  appliedFilters.value = { ...defaults };
+  filters.value = getDefaultFilters();
+  Object.entries(treeFiltersByKey).forEach(([key, tree]) => {
+    if (!tree) return;
+    const values = (filters.value[key as keyof FiltersState] as string[]) ?? [];
+    tree.syncFromFilters(values);
+  });
 };
 
 const toggleColumn = (field: string) => {
-  if (field === 'ssoId') return;
-  if (visibleColumns.value.includes(field)) {
-    visibleColumns.value = visibleColumns.value.filter((c) => c !== field);
-  } else {
-    visibleColumns.value = ALL_COLUMN_FIELDS.filter((c) => visibleColumns.value.includes(c) || c === field);
-  }
+  const column = columnDefs.value.find((item) => item.field === field);
+  if (!column || field === 'ssoId') return;
+  column.isVisible = !column.isVisible;
 };
 
 const selectAllColumns = () => {
-  visibleColumns.value = [...ALL_COLUMN_FIELDS];
+  columnDefs.value.forEach((column) => {
+    column.isVisible = true;
+  });
 };
 
 const resetColumns = () => {
-  visibleColumns.value = ['ssoId'];
+  columnDefs.value.forEach((column) => {
+    column.isVisible = column.field === 'ssoId';
+  });
 };
 
 const waitMs = (ms: number) => new Promise<void>((resolve) => {
@@ -1346,9 +1241,9 @@ const handleExport = async (format: 'csv' | 'excel') => {
 
     const filename = getExportFilename('users');
     if (format === 'csv') {
-      exportToCSV(filteredRows.value, visibleColumns.value, filename);
+      exportToCSV(filteredRows.value, columnDefs.value, filename);
     } else {
-      exportToExcel(filteredRows.value, visibleColumns.value, filename);
+      exportToExcel(filteredRows.value, columnDefs.value, filename);
     }
     exportOpen.value = false;
   } finally {
@@ -1648,47 +1543,6 @@ const highlightParts = (text: string, query: string) => {
 .users-table :deep(td) {
   font-size: 12px;
   color: #334155;
-}
-
-.users-table :deep(.points-group) {
-  box-sizing: border-box;
-  --points-left-shadow: none;
-  --points-right-shadow: none;
-  --points-top-shadow: none;
-  box-shadow: var(--points-left-shadow), var(--points-right-shadow), var(--points-top-shadow);
-}
-
-.users-table :deep(.points-group--city) {
-  --points-color: #22c55e;
-}
-
-.users-table :deep(.points-group--prize) {
-  --points-color: #ef4444;
-}
-
-.users-table :deep(.points-group--kids) {
-  --points-color: #f59e0b;
-}
-
-.users-table :deep(.points-group--start) {
-  --points-left-shadow: inset 2px 0 0 var(--points-color);
-}
-
-.users-table :deep(.points-group--end) {
-  --points-right-shadow: inset -2px 0 0 var(--points-color);
-}
-
-.users-table :deep(th.points-group) {
-  --points-top-shadow: inset 0 2px 0 var(--points-color);
-  border-radius: 0;
-}
-
-.users-table :deep(th.points-group--start) {
-  border-top-left-radius: 6px;
-}
-
-.users-table :deep(th.points-group--end) {
-  border-top-right-radius: 6px;
 }
 
 .sso-link {
@@ -2330,3 +2184,4 @@ const highlightParts = (text: string, query: string) => {
   }
 }
 </style>
+
