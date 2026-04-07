@@ -904,7 +904,7 @@
             <div>
               <div class="export-option__title">Excel (.xlsx)</div>
               <div class="export-option__desc">
-                {{ exportLoadingFormat === 'excel' ? 'Формируем файл, подождите 5 секунд...' : 'Рекомендуется для анализа данных' }}
+                {{ exportLoadingFormat === 'excel' ? 'Формируем файл...' : 'Максимум 400 000 строк' }}
               </div>
             </div>
           </div>
@@ -918,7 +918,7 @@
             <div>
               <div class="export-option__title">CSV (.csv)</div>
               <div class="export-option__desc">
-                {{ exportLoadingFormat === 'csv' ? 'Формируем файл, подождите 5 секунд...' : 'Универсальный формат' }}
+                {{ exportLoadingFormat === 'csv' ? 'Формируем файл...' : 'Максимум 1 000 000 строк' }}
               </div>
             </div>
           </div>
